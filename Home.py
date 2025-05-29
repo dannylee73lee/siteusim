@@ -9,6 +9,7 @@ import time
 import os
 from pathlib import Path
 import random
+import json  # 상단에 추가
 
 # # 페이지 설정
 # st.set_page_config(
@@ -20,51 +21,60 @@ import random
 
 # Google Sheets 연결 설정
 @st.cache_resource
+@st.cache_resource
 def init_google_sheets():
     """Google Sheets 연결 초기화"""
     try:
         # Streamlit Cloud 환경 (secrets 사용)
         if "google_sheets" in st.secrets:
-            credentials_dict = st.secrets["google_sheets"]["credentials"]
+            credentials_raw = st.secrets["google_sheets"]["credentials"]
             sheets_url = st.secrets["google_sheets"]["sheets_url"]
+            
+            # JSON 문자열이면 파싱
+            if isinstance(credentials_raw, str):
+                credentials_dict = json.loads(credentials_raw)
+            else:
+                credentials_dict = credentials_raw
         else:
-            # 로컬 환경 (JSON 파일 사용)
+            # 로컬 환경 (credentials.json 파일 사용)
             credentials_path = Path("credentials.json")
             if not credentials_path.exists():
                 st.error("❌ credentials.json 파일이 없습니다. 설정 가이드를 참고하세요.")
                 return None, None
-            
-            # 환경변수에서 설정 읽기
+
+            # 환경변수에서 Google Sheets URL 읽기
             try:
                 from dotenv import load_dotenv
                 load_dotenv()
             except ImportError:
                 pass
-            
+
             sheets_url = os.getenv("GOOGLE_SHEETS_URL")
             credentials_dict = str(credentials_path)
-        
-        # Google Sheets 연결
+
+        # 인증 범위 설정
         scope = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive"
         ]
-        
-        if isinstance(credentials_dict, str):
+
+        # 자격 증명 생성
+        if isinstance(credentials_dict, str) and Path(credentials_dict).exists():
             creds = Credentials.from_service_account_file(credentials_dict, scopes=scope)
         else:
             creds = Credentials.from_service_account_info(credentials_dict, scopes=scope)
-        
+
         client = gspread.authorize(creds)
-        
+
+        # 스프레드시트 열기
         if sheets_url:
             sheet_id = sheets_url.split("/d/")[1].split("/")[0]
             workbook = client.open_by_key(sheet_id)
         else:
             workbook = client.open("유심관리시스템_데이터")
-        
+
         return workbook, client
-        
+
     except Exception as e:
         st.error(f"❌ Google Sheets 연결 오류: {str(e)}")
         return None, None
