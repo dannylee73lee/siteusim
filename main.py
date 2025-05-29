@@ -9,7 +9,7 @@ st.set_page_config(
 # Git/Streamlit 접근 차단 CSS 및 다크모드 최적화
 st.markdown("""
     <style>
-    /* Git/Streamlit 하단 링크 숨기기 - 최강화 버전 */
+    /* Git/Streamlit 하단 링크 숨기기 - 강화된 버전 */
     .stAppDeployButton,
     footer,
     .stDeployButton,
@@ -32,31 +32,7 @@ st.markdown("""
     div[class*="viewerBadge"],
     div[data-testid="ViewerBadge"],
     .ViewerBadge,
-    [data-testid="toolbarDecorationContainer"],
-    /* 추가 - 더 구체적인 선택자들 */
-    .stApp > footer,
-    .stApp footer,
-    div[data-testid="stBottom"],
-    .stBottom,
-    [data-testid="stBottomBlockContainer"],
-    .stBottomBlockContainer,
-    div[class*="bottom"],
-    div[class*="footer"],
-    div[class*="decoration"],
-    .element-container:has(a[href*="streamlit"]),
-    .element-container:has(img[alt*="Streamlit"]),
-    .stMarkdown:has(a[href*="streamlit"]),
-    /* 모바일에서의 배지들 */
-    .stApp > div:last-child,
-    .main .block-container ~ div,
-    .main .block-container + div,
-    /* 하단 고정 요소들 */
-    div[style*="position: fixed"][style*="bottom"],
-    div[style*="position: absolute"][style*="bottom"],
-    /* 특정 텍스트가 포함된 요소들 숨기기 */
-    *:contains("Created by"),
-    *:contains("Hosted with Streamlit"),
-    *:contains("Made with Streamlit") {
+    [data-testid="toolbarDecorationContainer"] {
         visibility: hidden !important;
         display: none !important;
         opacity: 0 !important;
@@ -64,9 +40,6 @@ st.markdown("""
         width: 0 !important;
         position: absolute !important;
         left: -9999px !important;
-        top: -9999px !important;
-        z-index: -9999 !important;
-        pointer-events: none !important;
     }
     
     /* 다크모드 최적화 */
@@ -135,7 +108,7 @@ st.markdown("""
         }
     }
     
-    /* 라이트모드에서도 접근 제한 유지 - 최강화 버전 */
+    /* 라이트모드에서도 접근 제한 유지 - 강화 버전 */
     .stAppDeployButton,
     footer,
     .stDeployButton,
@@ -157,25 +130,7 @@ st.markdown("""
     div[class*="viewerBadge"],
     div[data-testid="ViewerBadge"],
     .ViewerBadge,
-    [data-testid="toolbarDecorationContainer"],
-    /* 추가 강화 선택자들 */
-    .stApp > footer,
-    .stApp footer,
-    div[data-testid="stBottom"],
-    .stBottom,
-    [data-testid="stBottomBlockContainer"],
-    .stBottomBlockContainer,
-    div[class*="bottom"],
-    div[class*="footer"],
-    div[class*="decoration"],
-    .element-container:has(a[href*="streamlit"]),
-    .element-container:has(img[alt*="Streamlit"]),
-    .stMarkdown:has(a[href*="streamlit"]),
-    .stApp > div:last-child,
-    .main .block-container ~ div,
-    .main .block-container + div,
-    div[style*="position: fixed"][style*="bottom"],
-    div[style*="position: absolute"][style*="bottom"] {
+    [data-testid="toolbarDecorationContainer"] {
         visibility: hidden !important;
         display: none !important;
         opacity: 0 !important;
@@ -183,9 +138,6 @@ st.markdown("""
         width: 0 !important;
         position: absolute !important;
         left: -9999px !important;
-        top: -9999px !important;
-        z-index: -9999 !important;
-        pointer-events: none !important;
     }
     
     /* 추가적인 Streamlit 브랜딩 요소 제거 */
@@ -204,7 +156,7 @@ st.markdown("""
     }
     </style>
     <script>
-    // JavaScript로 동적으로 Streamlit 브랜딩 요소 제거 - 최강화 버전
+    // JavaScript로 동적으로 Streamlit 브랜딩 요소 제거
     function hideStreamlitElements() {
         // 일반적인 Streamlit 브랜딩 요소들
         const selectors = [
@@ -217,15 +169,10 @@ st.markdown("""
             '[data-testid="stDecoration"]',
             '[data-testid="ViewerBadge"]',
             '[data-testid="toolbarDecorationContainer"]',
-            '[data-testid="stBottom"]',
-            '[data-testid="stBottomBlockContainer"]',
             'a[href*="streamlit.io"]',
             'a[href*="github.com/streamlit"]',
             '.github-corner',
-            'div[class*="viewerBadge"]',
-            'div[class*="bottom"]',
-            'div[class*="footer"]',
-            'div[class*="decoration"]'
+            'div[class*="viewerBadge"]'
         ];
         
         selectors.forEach(selector => {
@@ -238,135 +185,38 @@ st.markdown("""
                 element.style.width = '0';
                 element.style.position = 'absolute';
                 element.style.left = '-9999px';
-                element.style.top = '-9999px';
-                element.style.zIndex = '-9999';
-                element.style.pointerEvents = 'none';
-                // 완전히 제거
-                if (element.parentNode) {
-                    element.parentNode.removeChild(element);
-                }
             });
         });
         
-        // 텍스트 기반으로 'Created by', 'Hosted with Streamlit' 등 제거
+        // 텍스트 기반으로 'Made with Streamlit' 등 제거
         const allElements = document.querySelectorAll('*');
         allElements.forEach(element => {
             if (element.innerText && 
-                (element.innerText.includes('Created by') ||
-                 element.innerText.includes('Hosted with Streamlit') ||
-                 element.innerText.includes('Made with Streamlit') || 
+                (element.innerText.includes('Made with Streamlit') || 
                  element.innerText.includes('Streamlit') ||
                  element.innerText.includes('GitHub'))) {
-                // 상위 컨테이너도 함께 제거
-                let targetElement = element;
-                // 부모 요소들 중에서 적절한 컨테이너 찾기
-                while (targetElement.parentNode && 
-                       targetElement.parentNode.children.length <= 2 &&
-                       targetElement.parentNode !== document.body) {
-                    targetElement = targetElement.parentNode;
-                }
-                
-                targetElement.style.display = 'none';
-                targetElement.style.visibility = 'hidden';
-                targetElement.style.opacity = '0';
-                targetElement.style.height = '0';
-                targetElement.style.width = '0';
-                targetElement.style.position = 'absolute';
-                targetElement.style.left = '-9999px';
-                targetElement.style.zIndex = '-9999';
-                
-                // 완전히 제거
-                if (targetElement.parentNode) {
-                    targetElement.parentNode.removeChild(targetElement);
-                }
-            }
-        });
-        
-        // 하단에 고정된 요소들 특별 처리
-        const bottomElements = document.querySelectorAll('div[style*="bottom"]');
-        bottomElements.forEach(element => {
-            if (element.innerHTML.includes('Streamlit') || 
-                element.innerHTML.includes('Created') ||
-                element.innerHTML.includes('Hosted')) {
-                if (element.parentNode) {
-                    element.parentNode.removeChild(element);
-                }
-            }
-        });
-        
-        // 마지막 div 요소들 중 의심스러운 것들 제거
-        const lastDivs = document.querySelectorAll('.stApp > div:last-child, .main .block-container ~ div, .main .block-container + div');
-        lastDivs.forEach(element => {
-            if (element.innerHTML.includes('Streamlit') || 
-                element.innerHTML.includes('Created') ||
-                element.innerHTML.includes('Hosted') ||
-                element.querySelectorAll('a').length > 0) {
-                if (element.parentNode) {
-                    element.parentNode.removeChild(element);
+                if (element.tagName === 'A' || element.closest('a')) {
+                    element.style.display = 'none';
                 }
             }
         });
     }
     
-    // 페이지 로드 시 즉시 실행
-    hideStreamlitElements();
-    
-    // DOM이 완전히 로드된 후 실행
+    // 페이지 로드 시 실행
     document.addEventListener('DOMContentLoaded', hideStreamlitElements);
     
-    // 페이지가 완전히 로드된 후 실행
-    window.addEventListener('load', hideStreamlitElements);
-    
-    // MutationObserver로 동적 생성 요소도 감지하여 즉시 제거
+    // MutationObserver로 동적 생성 요소도 감지하여 제거
     const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
-                mutation.addedNodes.forEach(function(node) {
-                    if (node.nodeType === 1) { // Element node
-                        // 새로 추가된 요소가 Streamlit 브랜딩과 관련된 것인지 확인
-                        if (node.innerHTML && 
-                            (node.innerHTML.includes('Streamlit') || 
-                             node.innerHTML.includes('Created') ||
-                             node.innerHTML.includes('Hosted'))) {
-                            node.style.display = 'none';
-                            if (node.parentNode) {
-                                node.parentNode.removeChild(node);
-                            }
-                        }
-                        
-                        // 새로 추가된 요소 내부의 브랜딩 요소들도 제거
-                        const streamlitElements = node.querySelectorAll('*');
-                        streamlitElements.forEach(element => {
-                            if (element.innerText && 
-                                (element.innerText.includes('Created by') ||
-                                 element.innerText.includes('Hosted with Streamlit') ||
-                                 element.innerText.includes('Made with Streamlit'))) {
-                                element.style.display = 'none';
-                                if (element.parentNode) {
-                                    element.parentNode.removeChild(element);
-                                }
-                            }
-                        });
-                    }
-                });
-            }
-        });
-        hideStreamlitElements(); // 매번 전체 체크도 실행
+        hideStreamlitElements();
     });
     
     observer.observe(document.body, {
         childList: true,
-        subtree: true,
-        attributes: true,
-        attributeOldValue: true
+        subtree: true
     });
     
-    // 더 자주 체크 (0.5초마다)
-    setInterval(hideStreamlitElements, 500);
-    
-    // 스크롤 이벤트에서도 체크 (모바일에서 하단 배지가 나타날 수 있음)
-    window.addEventListener('scroll', hideStreamlitElements);
-    window.addEventListener('resize', hideStreamlitElements);
+    // 주기적으로도 체크 (1초마다)
+    setInterval(hideStreamlitElements, 1000);
     </script>
 """, unsafe_allow_html=True)
 
