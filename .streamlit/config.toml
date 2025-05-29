@@ -1,0 +1,4 @@
+# 앱 테마만 설정 (가장 안전)
+[theme]
+primaryColor = "#667eea"
+backgroundColor = "#ffffff"

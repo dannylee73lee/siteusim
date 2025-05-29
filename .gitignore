@@ -1,0 +1,59 @@
+# 에디터로 열기 (VS Code 사용시)
+code .gitignore
+
+# 또는 터미널에서 직접 작성
+cat > .gitignore << 'EOF'
+# 파이썬 관련
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 가상환경
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# 중요한 보안 파일들 (절대 업로드 금지!)
+credentials.json
+.streamlit/secrets.toml
+*.key
+*.pem
+
+# 로그 및 임시 파일
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 테스트 및 빌드
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+EOF
