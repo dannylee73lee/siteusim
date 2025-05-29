@@ -708,7 +708,7 @@ def show_input_screen(store_name, store_code):
             • 전화번호는 숫자만 입력하세요<br>
             • 대기번호 발급 후 호출시까지 대기해주세요<br>
             • 예상시간은 실시간으로 변동될 수 있습니다<br>
-            • 개인정보는 이름만 마스킹 처리되어 안전하게 보관됩니다
+            • 개인정보는 식별이 불가능하도록 처리되며 안전하게 파기됩니다.
         </div>
     </div>
     """, unsafe_allow_html=True)
