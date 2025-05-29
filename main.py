@@ -6,10 +6,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Git/Streamlit 접근 차단 CSS 및 다크모드 최적화 (강화된 버전)
+# Git/Streamlit 접근 차단 CSS 및 다크모드 최적화
 st.markdown("""
     <style>
-    /* Git/Streamlit 하단 링크 숨기기 (강화된 버전) */
+    /* Git/Streamlit 하단 링크 숨기기 (더 강화된 CSS) */
     .stAppDeployButton,
     footer,
     .stDeployButton,
@@ -17,33 +17,27 @@ st.markdown("""
     header[data-testid="stHeader"],
     .viewerBadge_container__1QSob,
     .styles_viewerBadge__1yB5_,
-    .viewerBadge_link__1S137,
-    .viewerBadge_text__1JaDK,
-    a[href*="streamlit.io"],
-    a[href*="github.com"],
+    footer[data-testid="stFooter"],
     div[data-testid="stToolbar"],
-    .stAppViewContainer > .main .block-container,
-    footer > .block-container,
-    [data-testid="stDecoration"],
-    [data-testid="stHeader"],
-    .css-18ni7ap.e8zbici2,
-    .css-h5rgaw.egzxvld1 {
+    .reportview-container .main footer,
+    .reportview-container .main footer[data-testid="stFooter"],
+    .css-hi6a2p,
+    .css-9s5bis,
+    .edgvbvh3,
+    .css-1d391kg,
+    .stActionButton,
+    .stDecoration {
         visibility: hidden !important;
         display: none !important;
         height: 0 !important;
         width: 0 !important;
         position: absolute !important;
-        z-index: -1 !important;
-        opacity: 0 !important;
+        top: -9999px !important;
     }
     
-    /* 추가 숨김 처리 */
-    .css-1dp5vir.e8zbici2 {
-        display: none !important;
-    }
-    
-    /* Made with Streamlit 텍스트 숨기기 */
-    .css-cio0fd.egzxvld1 {
+    /* 추가적인 숨김 처리 */
+    a[href*="streamlit.io"],
+    a[href*="github.com"] {
         display: none !important;
     }
     
@@ -111,15 +105,6 @@ st.markdown("""
             background-color: #1a3d1a !important;
             color: #fafafa !important;
         }
-    }
-    
-    /* 라이트모드에서도 접근 제한 유지 */
-    .stAppDeployButton,
-    footer,
-    .stDeployButton,
-    #MainMenu {
-        visibility: hidden !important;
-        display: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -347,7 +332,7 @@ def show_admin_view(sheets_manager, store_code=None):
 
             st.markdown("""</div></div>""", unsafe_allow_html=True)
 
-# 고객 등록 화면 (기존 코드와 연동) - 효과 추가
+# 고객 등록 화면 (기존 코드와 연동) - 성공 효과 추가
 def show_customer_view(sheets_manager, store_code=None):
     # 다크모드 최적화 CSS 추가
     st.markdown("""
@@ -376,46 +361,26 @@ def show_customer_view(sheets_manager, store_code=None):
         </style>
     """, unsafe_allow_html=True)
     
-    # Home.py의 show_input_screen 함수를 여기서 재구현 (효과 추가용)
-    from Home import get_store_name
-    
+    from Home import show_input_screen, get_store_name
+
     store_code = store_code or st.session_state.get("selected_store_code", "STORE001")
     store_name = st.session_state.get("selected_store_name", get_store_name(store_code, sheets_manager))
     
-    # 고객 등록 성공시 효과를 위한 커스텀 함수
-    def show_input_screen_with_effects(store_name, store_code):
-        st.title("📱 유심 교체 대기 등록")
-        st.markdown(f"**📍 매장**: {store_name}")
-        
-        with st.form("customer_form"):
-            name = st.text_input("👤 성함", placeholder="홍길동")
-            phone = st.text_input("📞 연락처", placeholder="010-1234-5678")
-            submitted = st.form_submit_button("📝 등록하기", use_container_width=True)
-            
-            if submitted:
-                if not name.strip():
-                    st.error("❌ 성함을 입력해주세요.")
-                elif not phone.strip():
-                    st.error("❌ 연락처를 입력해주세요.")
-                else:
-                    # 여기서 실제 등록 로직 수행
-                    # (Home.py의 등록 로직을 가져와야 함)
-                    try:
-                        # 고객 등록 성공 효과
-                        st.success(f"✅ {name}님 등록이 완료되었습니다!")
-                        st.balloons()  # 풍선 효과 추가
-                        time.sleep(2)  # 2초 대기
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ 등록 중 오류가 발생했습니다: {str(e)}")
+    # 고객 등록 성공시 효과를 위한 세션 상태 체크
+    if st.session_state.get('customer_registration_success', False):
+        st.balloons()
+        st.success("🎉 고객 등록이 완료되었습니다!")
+        time.sleep(2)
+        # 성공 플래그 초기화
+        st.session_state.customer_registration_success = False
+        st.rerun()
     
-    show_input_screen_with_effects(store_name, store_code)
+    show_input_screen(store_name, store_code)
 
-# 수정된 로그인 화면 - 메시지 변경
+# 수정된 로그인 화면
 def show_login(sheets_manager):
-    # 로그인 성공 메시지 변경
     if 'selected_store_name' in st.session_state:
-        st.success("✅ 로그인 성공! 왼쪽 사이드바 메뉴에서 선택해주세요~")
+        st.success(f"✅ 로그인 성공! 왼쪽 사이드바 메뉴에서 선택해주세요~ ({st.session_state['selected_store_name']})")
         return
         
     st.subheader("🔐 매장 관리자 로그인")
