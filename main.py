@@ -356,7 +356,7 @@ def show_customer_view(sheets_manager, store_code=None):
 # 수정된 로그인 화면
 def show_login(sheets_manager):
     if 'selected_store_name' in st.session_state:
-        st.success(f"✅ 이미 로그인됨: {st.session_state['selected_store_name']}")
+        st.success(f"✅ 로그인 성공! 왼쪽 사이드바 메뉴에서 선택해주세요~ {st.session_state['selected_store_name']}")
         return
         
     st.subheader("🔐 매장 관리자 로그인")
