@@ -26,7 +26,7 @@ def init_google_sheets():
     try:
         if "google_sheets" in st.secrets:
             secrets_data = st.secrets["google_sheets"]
-            st.write("✅ st.secrets['google_sheets'] 내용:", secrets_data)  # 디버깅용 출력
+            # st.write("✅ st.secrets['google_sheets'] 내용:", secrets_data)  # 디버깅용 출력
 
             credentials_raw = secrets_data.get("credentials")
             sheets_url = secrets_data.get("sheets_url")
