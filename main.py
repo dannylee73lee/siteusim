@@ -6,129 +6,95 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Streamlit 요소 숨기기 함수 (수정된 버전)
-def hide_streamlit_elements():
-    # Admin이 아닌 일반 user는 하단 요소들 숨기기
-    admin_level = st.session_state.get('admin_level', 'user')
-    
-    if admin_level == 'user':
-        st.markdown("""
-        <style>
-        /* Streamlit 하단 링크 및 기타 요소 숨기기 */
-        .stApp > footer {visibility: hidden;}
-        .stApp > header {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        .css-1dp5vir {visibility: hidden;}
-        .css-hi6a2p {visibility: hidden;}
-        .css-9s5bis {visibility: hidden;}
-        .css-1v0mbdj {visibility: hidden;}
-        .viewerBadge_container__1QSob {display: none;}
-        .stActionButton {visibility: hidden;}
-        
-        /* Fork, GitHub 등 링크 숨기기 */
-        .css-1kyxreq {display: none;}
-        .css-12oz5g7 {display: none;}
-        [data-testid="stToolbar"] {display: none;}
-        iframe[src*="streamlit"] {display: none;}
-        </style>
-        """, unsafe_allow_html=True)
-
-# 다크모드 최적화 CSS
-def apply_dark_mode_optimization():
-    st.markdown("""
+# Git/Streamlit 접근 차단 CSS 및 다크모드 최적화
+st.markdown("""
     <style>
+    /* Git/Streamlit 하단 링크 숨기기 (master 권한자 외) */
+    .stAppDeployButton,
+    footer,
+    .stDeployButton,
+    #MainMenu,
+    header[data-testid="stHeader"] {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
     /* 다크모드 최적화 */
     @media (prefers-color-scheme: dark) {
         .stApp {
-            background-color: #0e1117;
-            color: #fafafa;
+            background-color: #0e1117 !important;
         }
         
-        /* 카드 스타일 다크모드용 배경색 조정 */
-        .stContainer > div {
-            background-color: #262730;
-            border: 1px solid #404040;
+        .stSelectbox > div > div {
+            background-color: #262730 !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
         }
         
-        /* 버튼 다크모드 최적화 */
+        .stTextInput > div > div > input {
+            background-color: #262730 !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
+        }
+        
         .stButton > button {
-            background-color: #262730;
-            border: 1px solid #404040;
-            color: #fafafa;
+            background-color: #262730 !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
         }
         
         .stButton > button:hover {
-            background-color: #404040;
-            border-color: #606060;
-        }
-        
-        /* 입력 필드 다크모드 최적화 */
-        .stTextInput > div > div > input,
-        .stSelectbox > div > div > select {
-            background-color: #262730;
-            border: 1px solid #404040;
-            color: #fafafa;
-        }
-        
-        /* 상태 표시 카드 다크모드 조정 */
-        div[style*="background-color:#fff3cd"] {
-            background-color: #3d3d00 !important;
-            border: 1px solid #666600;
-        }
-        
-        div[style*="background-color:#d1ecf1"] {
-            background-color: #003d44 !important;
-            border: 1px solid #006666;
-        }
-        
-        div[style*="background-color:#d4edda"] {
-            background-color: #003d00 !important;
-            border: 1px solid #006600;
-        }
-        
-        /* 메트릭 및 정보 박스 다크모드 */
-        .stMetric {
-            background-color: #262730;
-            border: 1px solid #404040;
-            padding: 10px;
-            border-radius: 8px;
-        }
-        
-        /* Alert 박스 다크모드 */
-        .stAlert {
-            background-color: #262730;
-            border-left: 4px solid #ff6b6b;
-        }
-        
-        .stSuccess {
-            background-color: #262730;
-            border-left: 4px solid #51cf66;
+            background-color: #3a3a3a !important;
+            border: 1px solid #6a6a6a !important;
         }
         
         .stInfo {
-            background-color: #262730;
-            border-left: 4px solid #339af0;
+            background-color: #1a1a2e !important;
+            color: #fafafa !important;
         }
         
         .stWarning {
-            background-color: #262730;
-            border-left: 4px solid #ffd43b;
+            background-color: #2e1a1a !important;
+            color: #fafafa !important;
+        }
+        
+        .stSuccess {
+            background-color: #1a2e1a !important;
+            color: #fafafa !important;
+        }
+        
+        .stError {
+            background-color: #3d1a1a !important;
+            color: #fafafa !important;
+        }
+        
+        /* 고객 카드 다크모드 최적화 */
+        div[style*="background-color:#fff3cd"] {
+            background-color: #3d3d1a !important;
+            color: #fafafa !important;
+        }
+        
+        div[style*="background-color:#d1ecf1"] {
+            background-color: #1a3d3d !important;
+            color: #fafafa !important;
+        }
+        
+        div[style*="background-color:#d4edda"] {
+            background-color: #1a3d1a !important;
+            color: #fafafa !important;
         }
     }
     
-    /* 라이트모드에서도 개선된 스타일 */
-    @media (prefers-color-scheme: light) {
-        /* 상태 표시 카드에 그림자 추가 */
-        div[style*="background-color:#fff3cd"],
-        div[style*="background-color:#d1ecf1"],
-        div[style*="background-color:#d4edda"] {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border: 1px solid rgba(0,0,0,0.1);
-        }
+    /* 라이트모드에서도 접근 제한 유지 */
+    .stAppDeployButton,
+    footer,
+    .stDeployButton,
+    #MainMenu {
+        visibility: hidden !important;
+        display: none !important;
     }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 from datetime import datetime
 import pandas as pd
@@ -246,14 +212,33 @@ class SheetsManager:
 def show_admin_view(sheets_manager, store_code=None):
     import io
     from streamlit import download_button
-    # 자동 새로고침 (30초 간격)
+    
+    # 자동 새로고침 및 다크모드 최적화
     st.markdown("""
         <script>
         setTimeout(function() {
             window.location.reload();
         }, 30000);
         </script>
+        <style>
+        /* 다크모드에서 고객 카드 색상 최적화 */
+        @media (prefers-color-scheme: dark) {
+            .customer-card-waiting {
+                background-color: #3d3d1a !important;
+                color: #fafafa !important;
+            }
+            .customer-card-processing {
+                background-color: #1a3d3d !important;
+                color: #fafafa !important;
+            }
+            .customer-card-done {
+                background-color: #1a3d1a !important;
+                color: #fafafa !important;
+            }
+        }
+        </style>
     """, unsafe_allow_html=True)
+    
     st.subheader("💻 전산 담당자용 고객 목록")
 
     store_code = store_code or st.session_state.get("selected_store_code")
@@ -297,13 +282,23 @@ def show_admin_view(sheets_manager, store_code=None):
     else:
         st.info("다운로드할 데이터가 없습니다.")
 
-    # 화면에는 대기, 처리중인 고객만 표시
+    # 화면에는 대기, 처리중인 고객만 표시 (다크모드 최적화)
     for customer in filtered_for_display:
         with st.container():
             status = customer['status']
-            bg_color = "#fff3cd" if status == '대기' else ("#d1ecf1" if status == '처리중' else ("#d4edda" if status == '완료' else "#ffffff"))
+            # 다크모드를 고려한 색상 설정
+            if status == '대기':
+                bg_color = "#fff3cd"
+                css_class = "customer-card-waiting"
+            elif status == '처리중':
+                bg_color = "#d1ecf1" 
+                css_class = "customer-card-processing"
+            else:
+                bg_color = "#d4edda"
+                css_class = "customer-card-done"
+                
             st.markdown(f"""
-                <div style='background-color:{bg_color}; padding:10px; border-radius:8px; margin-bottom:10px;'>
+                <div class="{css_class}" style='background-color:{bg_color}; padding:10px; border-radius:8px; margin-bottom:10px;'>
                     <div style='display:flex; align-items:center; justify-content:space-between;'>
                         <div style='flex:1;'><strong>ID:</strong> {customer['id']}</div>
                         <div style='flex:2;'><strong>이름:</strong> {customer['name']}</div>
@@ -326,12 +321,30 @@ def show_admin_view(sheets_manager, store_code=None):
 
 # 고객 등록 화면 (기존 코드와 연동)
 def show_customer_view(sheets_manager, store_code=None):
+    # 다크모드 최적화 CSS 추가
     st.markdown("""
         <style>
         input[type="text"], input[type="password"] {
             font-size: 24px !important;
         }
-        label { font-size: 20px !important; }
+        label { 
+            font-size: 20px !important; 
+        }
+        
+        /* 다크모드에서 입력 필드 최적화 */
+        @media (prefers-color-scheme: dark) {
+            .stTextInput > div > div > input {
+                background-color: #262730 !important;
+                color: #fafafa !important;
+                border: 2px solid #4a4a4a !important;
+                font-size: 24px !important;
+            }
+            
+            .stTextInput > label {
+                color: #fafafa !important;
+                font-size: 20px !important;
+            }
+        }
         </style>
     """, unsafe_allow_html=True)
     from Home import show_input_screen, get_store_name
@@ -339,31 +352,6 @@ def show_customer_view(sheets_manager, store_code=None):
     store_code = store_code or st.session_state.get("selected_store_code", "STORE001")
     store_name = st.session_state.get("selected_store_name", get_store_name(store_code, sheets_manager))
     show_input_screen(store_name, store_code)
-
-# Admin 권한 체크 함수 (수정된 버전)
-def check_admin_level(admin_id):
-    """Admin 권한 체크 - user와 admin 구분"""
-    # 방법 1: 환경변수 사용 (권장)
-    import os
-    admin_list = os.getenv('ADMIN_IDS', 'admin').split(',')
-    admin_ids = [admin.strip().lower() for admin in admin_list]
-    
-    # 방법 2: Google Sheets의 별도 시트 사용하는 경우 (아래 주석 해제)
-    # try:
-    #     workbook = init_google_sheets()[0]
-    #     if workbook:
-    #         admin_sheet = workbook.worksheet("admins")  # admins 시트 필요
-    #         admin_records = admin_sheet.get_all_records()
-    #         admin_ids = [record['admin_id'].lower() for record in admin_records if record.get('admin_id')]
-    #     else:
-    #         admin_ids = ["admin"]  # 기본값
-    # except:
-    #     admin_ids = ["admin"]  # 오류 시 기본값
-    
-    if admin_id.lower() in admin_ids:
-        return "admin"  # 관리자 권한
-    else:
-        return "user"   # 일반 사용자 권한
 
 # 수정된 로그인 화면
 def show_login(sheets_manager):
@@ -430,10 +418,6 @@ def show_login(sheets_manager):
             if store.get("admin_id", "").strip() == admin_id.strip() and store.get("admin_pw", "").strip() == admin_pw.strip():
                 st.session_state['selected_store_code'] = store['store_code']
                 st.session_state['selected_store_name'] = store['store_name']
-                
-                # Admin 권한 레벨 체크
-                st.session_state['admin_level'] = check_admin_level(admin_id)
-                
                 st.success(f"✅ {store['store_name']} 로그인 성공!")
                 st.rerun()
             else:
@@ -524,19 +508,15 @@ def show_logout_button():
     if 'selected_store_name' in st.session_state:
         if st.button("🚪 로그아웃"):
             # 세션 상태 초기화
-            keys_to_remove = ['selected_store_code', 'selected_store_name', 'admin_level']
-            for key in keys_to_remove:
-                if key in st.session_state:
-                    del st.session_state[key]
+            if 'selected_store_code' in st.session_state:
+                del st.session_state['selected_store_code']
+            if 'selected_store_name' in st.session_state:
+                del st.session_state['selected_store_name']
             st.success("✅ 로그아웃되었습니다.")
             st.rerun()
 
 # 메인 함수
 def main():
-    # CSS 적용
-    apply_dark_mode_optimization()
-    hide_streamlit_elements()
-    
     workbook, client = init_google_sheets()
     if workbook is None:
         st.error("📛 Google Sheets 연결 오류")
@@ -546,10 +526,7 @@ def main():
 
     with st.sidebar:
         if 'selected_store_name' in st.session_state:
-            store_name = st.session_state['selected_store_name']
-            admin_level = st.session_state.get('admin_level', 'user')
-            admin_badge = " 🔑" if admin_level == 'admin' else " 👤"
-            st.markdown(f"**🔓 로그인됨:** `{store_name}`{admin_badge}")
+            st.markdown(f"**🔓 로그인됨:** `{st.session_state['selected_store_name']}`")
             show_logout_button()  # 로그아웃 버튼 추가
         else:
             st.markdown("🔒 로그인되지 않음")
