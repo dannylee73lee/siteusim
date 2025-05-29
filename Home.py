@@ -703,7 +703,7 @@ def show_input_screen(store_name, store_code):
     # 빠른 팁 - 새로운 디자인
     st.markdown("""
     <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 20px; padding: 25px; margin: 20px 0; color: white;">
-        <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.3rem;">💡 빠른 팁</h3>
+        <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.3rem;">💡 이용 안내</h3>
         <div style="line-height: 1.8; font-size: 1rem;">
             • 전화번호는 숫자만 입력하세요<br>
             • 대기번호 발급 후 호출시까지 대기해주세요<br>
