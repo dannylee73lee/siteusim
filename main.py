@@ -252,7 +252,7 @@ def show_login(sheets_manager):
         if not registered_stores:
             st.warning(f"❗ {selected_team}에 관리자가 등록된 매장이 없습니다.")
             st.markdown("### 🎯 관리자 등록이 필요합니다")
-            st.info("1️⃣ 상단의 '관리자 등록' 탭으로 이동하세요")
+            st.info("1️⃣ 좌측의 '관리자 등록' 탭으로 이동하세요")
             st.info("2️⃣ 매장을 선택하고 관리자 정보를 등록하세요")
             st.info("3️⃣ 등록 완료 후 이 화면에서 로그인하세요")
             return
