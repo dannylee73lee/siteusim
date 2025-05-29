@@ -9,14 +9,37 @@ st.set_page_config(
 # Git/Streamlit 접근 차단 CSS 및 다크모드 최적화
 st.markdown("""
     <style>
-    /* Git/Streamlit 하단 링크 숨기기 (master 권한자 외) */
+    /* Git/Streamlit 하단 링크 숨기기 - 강화된 버전 */
     .stAppDeployButton,
     footer,
     .stDeployButton,
     #MainMenu,
-    header[data-testid="stHeader"] {
+    header[data-testid="stHeader"],
+    .stAppHeader,
+    .stToolbar,
+    .viewerBadge_container__r5tak,
+    .viewerBadge_link__qRIco,
+    footer[data-testid="stDecoration"],
+    .stDecoration,
+    [data-testid="stDecoration"],
+    .css-1rs6os.edgvbvh3,
+    .css-10trblm.e16nr0p30,
+    .css-1y0tads.eczjsme18,
+    .streamlit-footer,
+    a[href*="streamlit.io"],
+    a[href*="github.com/streamlit"],
+    .github-corner,
+    div[class*="viewerBadge"],
+    div[data-testid="ViewerBadge"],
+    .ViewerBadge,
+    [data-testid="toolbarDecorationContainer"] {
         visibility: hidden !important;
         display: none !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
     }
     
     /* 다크모드 최적화 */
@@ -85,15 +108,116 @@ st.markdown("""
         }
     }
     
-    /* 라이트모드에서도 접근 제한 유지 */
+    /* 라이트모드에서도 접근 제한 유지 - 강화 버전 */
     .stAppDeployButton,
     footer,
     .stDeployButton,
-    #MainMenu {
+    #MainMenu,
+    .stAppHeader,
+    .stToolbar,
+    .viewerBadge_container__r5tak,
+    .viewerBadge_link__qRIco,
+    footer[data-testid="stDecoration"],
+    .stDecoration,
+    [data-testid="stDecoration"],
+    .css-1rs6os.edgvbvh3,
+    .css-10trblm.e16nr0p30,
+    .css-1y0tads.eczjsme18,
+    .streamlit-footer,
+    a[href*="streamlit.io"],
+    a[href*="github.com/streamlit"],
+    .github-corner,
+    div[class*="viewerBadge"],
+    div[data-testid="ViewerBadge"],
+    .ViewerBadge,
+    [data-testid="toolbarDecorationContainer"] {
         visibility: hidden !important;
+        display: none !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+    
+    /* 추가적인 Streamlit 브랜딩 요소 제거 */
+    .css-1dp5vir {
+        display: none !important;
+    }
+    
+    /* 'Made with Streamlit' 텍스트 숨기기 */
+    .css-cio0fd {
+        visibility: hidden !important;
+    }
+    
+    /* GitHub 아이콘이나 기타 외부 링크 제거 */
+    .css-1aumxhk {
         display: none !important;
     }
     </style>
+    <script>
+    // JavaScript로 동적으로 Streamlit 브랜딩 요소 제거
+    function hideStreamlitElements() {
+        // 일반적인 Streamlit 브랜딩 요소들
+        const selectors = [
+            'footer',
+            '.stAppDeployButton',
+            '.stDeployButton', 
+            '#MainMenu',
+            '.stAppHeader',
+            '.stToolbar',
+            '[data-testid="stDecoration"]',
+            '[data-testid="ViewerBadge"]',
+            '[data-testid="toolbarDecorationContainer"]',
+            'a[href*="streamlit.io"]',
+            'a[href*="github.com/streamlit"]',
+            '.github-corner',
+            'div[class*="viewerBadge"]'
+        ];
+        
+        selectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                element.style.display = 'none';
+                element.style.visibility = 'hidden';
+                element.style.opacity = '0';
+                element.style.height = '0';
+                element.style.width = '0';
+                element.style.position = 'absolute';
+                element.style.left = '-9999px';
+            });
+        });
+        
+        // 텍스트 기반으로 'Made with Streamlit' 등 제거
+        const allElements = document.querySelectorAll('*');
+        allElements.forEach(element => {
+            if (element.innerText && 
+                (element.innerText.includes('Made with Streamlit') || 
+                 element.innerText.includes('Streamlit') ||
+                 element.innerText.includes('GitHub'))) {
+                if (element.tagName === 'A' || element.closest('a')) {
+                    element.style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    // 페이지 로드 시 실행
+    document.addEventListener('DOMContentLoaded', hideStreamlitElements);
+    
+    // MutationObserver로 동적 생성 요소도 감지하여 제거
+    const observer = new MutationObserver(function(mutations) {
+        hideStreamlitElements();
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    // 주기적으로도 체크 (1초마다)
+    setInterval(hideStreamlitElements, 1000);
+    </script>
 """, unsafe_allow_html=True)
 
 from datetime import datetime
