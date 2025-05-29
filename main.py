@@ -224,23 +224,43 @@ def show_login(sheets_manager):
         
     st.subheader("🔐 매장 관리자 로그인")
     
-    # 모든 매장 목록 가져오기
     try:
-        all_stores = sheets_manager.get_all_stores()
-        store_options = [f"{store['store_name']} ({store['team']})" for store in all_stores if store.get('store_name')]
+        # 팀 목록 가져오기
+        teams = sheets_manager.get_teams()
         
-        if not store_options:
-            st.error("❌ 등록된 매장이 없습니다.")
+        if not teams:
+            st.error("❌ 등록된 팀이 없습니다.")
             return
             
-        # 매장 선택 드롭다운
-        selected_display = st.selectbox("🏪 매장 선택", ["매장을 선택하세요..."] + store_options)
+        # 팀 선택
+        selected_team = st.selectbox("👥 팀 선택", ["팀을 선택하세요..."] + teams)
         
-        if selected_display == "매장을 선택하세요...":
+        if selected_team == "팀을 선택하세요...":
             return
             
-        # 선택된 매장명 추출 (괄호 앞부분)
-        selected_store_name = selected_display.split(" (")[0]
+        # 선택된 팀의 매장들 가져오기 (관리자가 등록된 매장만)
+        team_stores = sheets_manager.get_stores_by_team(selected_team)
+        
+        if not team_stores:
+            st.warning(f"❗ {selected_team}에 등록된 매장이 없습니다.")
+            return
+            
+        # 관리자가 등록된 매장만 필터링
+        registered_stores = [store for store in team_stores if store.get('admin_id', '').strip()]
+        
+        if not registered_stores:
+            st.warning(f"❗ {selected_team}에 관리자가 등록된 매장이 없습니다.")
+            return
+            
+        store_names = [store['store_name'] for store in registered_stores]
+        selected_store_name = st.selectbox("🏪 매장 선택", ["매장을 선택하세요..."] + store_names)
+        
+        if selected_store_name == "매장을 선택하세요...":
+            return
+            
+        # 선택된 매장 정보 표시
+        selected_store = next(store for store in registered_stores if store['store_name'] == selected_store_name)
+        st.info(f"📍 선택된 매장: **{selected_store['store_name']}** ({selected_store['team']})")
         
         admin_id = st.text_input("👤 관리자 ID")
         admin_pw = st.text_input("🔒 비밀번호", type="password")
