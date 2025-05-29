@@ -6,6 +6,130 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Super Admin 권한 체크 및 하단 링크 숨기기
+def hide_streamlit_elements():
+    # Super Admin이 아닌 경우 하단 요소들 숨기기
+    is_super_admin = st.session_state.get('is_super_admin', False)
+    
+    if not is_super_admin:
+        st.markdown("""
+        <style>
+        /* Streamlit 하단 링크 및 기타 요소 숨기기 */
+        .stApp > footer {visibility: hidden;}
+        .stApp > header {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        .css-1dp5vir {visibility: hidden;}
+        .css-hi6a2p {visibility: hidden;}
+        .css-9s5bis {visibility: hidden;}
+        .css-1v0mbdj {visibility: hidden;}
+        .viewerBadge_container__1QSob {display: none;}
+        .stActionButton {visibility: hidden;}
+        
+        /* Fork, GitHub 등 링크 숨기기 */
+        .css-1kyxreq {display: none;}
+        .css-12oz5g7 {display: none;}
+        [data-testid="stToolbar"] {display: none;}
+        iframe[src*="streamlit"] {display: none;}
+        </style>
+        """, unsafe_allow_html=True)
+
+# 다크모드 최적화 CSS
+def apply_dark_mode_optimization():
+    st.markdown("""
+    <style>
+    /* 다크모드 최적화 */
+    @media (prefers-color-scheme: dark) {
+        .stApp {
+            background-color: #0e1117;
+            color: #fafafa;
+        }
+        
+        /* 카드 스타일 다크모드용 배경색 조정 */
+        .stContainer > div {
+            background-color: #262730;
+            border: 1px solid #404040;
+        }
+        
+        /* 버튼 다크모드 최적화 */
+        .stButton > button {
+            background-color: #262730;
+            border: 1px solid #404040;
+            color: #fafafa;
+        }
+        
+        .stButton > button:hover {
+            background-color: #404040;
+            border-color: #606060;
+        }
+        
+        /* 입력 필드 다크모드 최적화 */
+        .stTextInput > div > div > input,
+        .stSelectbox > div > div > select {
+            background-color: #262730;
+            border: 1px solid #404040;
+            color: #fafafa;
+        }
+        
+        /* 상태 표시 카드 다크모드 조정 */
+        div[style*="background-color:#fff3cd"] {
+            background-color: #3d3d00 !important;
+            border: 1px solid #666600;
+        }
+        
+        div[style*="background-color:#d1ecf1"] {
+            background-color: #003d44 !important;
+            border: 1px solid #006666;
+        }
+        
+        div[style*="background-color:#d4edda"] {
+            background-color: #003d00 !important;
+            border: 1px solid #006600;
+        }
+        
+        /* 메트릭 및 정보 박스 다크모드 */
+        .stMetric {
+            background-color: #262730;
+            border: 1px solid #404040;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        /* Alert 박스 다크모드 */
+        .stAlert {
+            background-color: #262730;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .stSuccess {
+            background-color: #262730;
+            border-left: 4px solid #51cf66;
+        }
+        
+        .stInfo {
+            background-color: #262730;
+            border-left: 4px solid #339af0;
+        }
+        
+        .stWarning {
+            background-color: #262730;
+            border-left: 4px solid #ffd43b;
+        }
+    }
+    
+    /* 라이트모드에서도 개선된 스타일 */
+    @media (prefers-color-scheme: light) {
+        /* 상태 표시 카드에 그림자 추가 */
+        div[style*="background-color:#fff3cd"],
+        div[style*="background-color:#d1ecf1"],
+        div[style*="background-color:#d4edda"] {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 from datetime import datetime
 import pandas as pd
 import time
@@ -216,6 +340,12 @@ def show_customer_view(sheets_manager, store_code=None):
     store_name = st.session_state.get("selected_store_name", get_store_name(store_code, sheets_manager))
     show_input_screen(store_name, store_code)
 
+# Super Admin 체크 함수
+def check_super_admin(admin_id):
+    """Super Admin 권한 체크"""
+    super_admin_ids = ["super_admin", "admin", "master"]  # 필요에 따라 수정
+    return admin_id.lower() in super_admin_ids
+
 # 수정된 로그인 화면
 def show_login(sheets_manager):
     if 'selected_store_name' in st.session_state:
@@ -252,7 +382,7 @@ def show_login(sheets_manager):
         if not registered_stores:
             st.warning(f"❗ {selected_team}에 관리자가 등록된 매장이 없습니다.")
             st.markdown("### 🎯 관리자 등록이 필요합니다")
-            st.info("1️⃣ 좌측의 '관리자 등록' 탭으로 이동하세요")
+            st.info("1️⃣ 상단의 '관리자 등록' 탭으로 이동하세요")
             st.info("2️⃣ 매장을 선택하고 관리자 정보를 등록하세요")
             st.info("3️⃣ 등록 완료 후 이 화면에서 로그인하세요")
             return
@@ -281,6 +411,10 @@ def show_login(sheets_manager):
             if store.get("admin_id", "").strip() == admin_id.strip() and store.get("admin_pw", "").strip() == admin_pw.strip():
                 st.session_state['selected_store_code'] = store['store_code']
                 st.session_state['selected_store_name'] = store['store_name']
+                
+                # Super Admin 권한 체크
+                st.session_state['is_super_admin'] = check_super_admin(admin_id)
+                
                 st.success(f"✅ {store['store_name']} 로그인 성공!")
                 st.rerun()
             else:
@@ -380,6 +514,10 @@ def show_logout_button():
 
 # 메인 함수
 def main():
+    # CSS 적용
+    apply_dark_mode_optimization()
+    hide_streamlit_elements()
+    
     workbook, client = init_google_sheets()
     if workbook is None:
         st.error("📛 Google Sheets 연결 오류")
@@ -389,7 +527,10 @@ def main():
 
     with st.sidebar:
         if 'selected_store_name' in st.session_state:
-            st.markdown(f"**🔓 로그인됨:** `{st.session_state['selected_store_name']}`")
+            store_name = st.session_state['selected_store_name']
+            is_super_admin = st.session_state.get('is_super_admin', False)
+            admin_badge = " 🔑" if is_super_admin else ""
+            st.markdown(f"**🔓 로그인됨:** `{store_name}`{admin_badge}")
             show_logout_button()  # 로그아웃 버튼 추가
         else:
             st.markdown("🔒 로그인되지 않음")
