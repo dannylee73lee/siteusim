@@ -247,31 +247,11 @@ def show_login(sheets_manager):
             
         # 관리자 등록된 매장과 미등록된 매장 분리
         registered_stores = [store for store in team_stores if store.get('admin_id', '').strip()]
-        unregistered_stores = [store for store in team_stores if not store.get('admin_id', '').strip()]
         
-        # 팀별 매장 현황 표시
-        st.markdown("---")
-        st.markdown(f"### 📊 {selected_team} 매장 현황")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("✅ 관리자 등록 완료", len(registered_stores))
-        with col2:
-            st.metric("⚠️ 관리자 등록 필요", len(unregistered_stores))
-        
-        # 미등록 매장이 있으면 안내 메시지
-        if unregistered_stores:
-            st.info("💡 일부 매장의 관리자 등록이 필요합니다. '관리자 등록' 탭을 이용해주세요.")
-            with st.expander("🔍 관리자 등록이 필요한 매장 목록"):
-                for store in unregistered_stores:
-                    st.write(f"• {store['store_name']}")
-        
-        st.markdown("---")
-        
-        # 관리자가 등록된 매장이 없는 경우
+        # 관리자가 등록된 매장이 없는 경우 - 관리자 등록 유도
         if not registered_stores:
             st.warning(f"❗ {selected_team}에 관리자가 등록된 매장이 없습니다.")
-            st.markdown("### 🎯 다음 단계")
+            st.markdown("### 🎯 관리자 등록이 필요합니다")
             st.info("1️⃣ 상단의 '관리자 등록' 탭으로 이동하세요")
             st.info("2️⃣ 매장을 선택하고 관리자 정보를 등록하세요")
             st.info("3️⃣ 등록 완료 후 이 화면에서 로그인하세요")
@@ -279,14 +259,14 @@ def show_login(sheets_manager):
             
         # 로그인할 매장 선택
         store_names = [store['store_name'] for store in registered_stores]
-        selected_store_name = st.selectbox("🏪 로그인할 매장 선택", ["매장을 선택하세요..."] + store_names)
+        selected_store_name = st.selectbox("🏪 매장 선택", ["매장을 선택하세요..."] + store_names)
         
         if selected_store_name == "매장을 선택하세요...":
             return
             
         # 선택된 매장 정보 표시
         selected_store = next(store for store in registered_stores if store['store_name'] == selected_store_name)
-        st.success(f"📍 선택된 매장: **{selected_store['store_name']}** ({selected_store['team']})")
+        st.info(f"📍 선택된 매장: **{selected_store['store_name']}** ({selected_store['team']})")
         
         admin_id = st.text_input("👤 관리자 ID")
         admin_pw = st.text_input("🔒 비밀번호", type="password")
