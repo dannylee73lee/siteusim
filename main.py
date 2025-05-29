@@ -70,6 +70,52 @@ class SheetsManager:
                 return True
         return False
 
+    def get_all_stores(self):
+        """모든 매장 정보 가져오기"""
+        sheet = self.workbook.worksheet("stores")
+        all_values = sheet.get_all_records()
+        return all_values
+    
+    def get_teams(self):
+        """모든 팀 목록 가져오기"""
+        stores = self.get_all_stores()
+        teams = list(set([store['team'] for store in stores if store.get('team')]))
+        return sorted(teams)
+    
+    def get_stores_by_team(self, team):
+        """특정 팀의 매장들 가져오기"""
+        stores = self.get_all_stores()
+        team_stores = [store for store in stores if store.get('team') == team]
+        return team_stores
+    
+    def get_store_by_name(self, store_name):
+        """매장명으로 매장 정보 찾기"""
+        stores = self.get_all_stores()
+        for store in stores:
+            if store.get('store_name') == store_name:
+                return store
+        return None
+    
+    def set_store_admin_by_name(self, store_name, admin_id, admin_pw):
+        """매장명으로 관리자 정보 설정"""
+        sheet = self.workbook.worksheet("stores")
+        all_values = sheet.get_all_values()
+        headers = all_values[0]
+        
+        try:
+            store_name_idx = headers.index("store_name")
+            admin_id_idx = headers.index("admin_id")
+            admin_pw_idx = headers.index("admin_pw")
+        except ValueError:
+            return False
+            
+        for i, row in enumerate(all_values[1:], start=2):
+            if row[store_name_idx] == store_name:
+                sheet.update_cell(i, admin_id_idx + 1, admin_id)
+                sheet.update_cell(i, admin_pw_idx + 1, admin_pw)
+                return True
+        return False
+
 # 전산 담당자 화면
 
 # show_admin_view 함수 수정
@@ -88,7 +134,7 @@ def show_admin_view(sheets_manager, store_code=None):
 
     store_code = store_code or st.session_state.get("selected_store_code")
     if not store_code:
-        st.warning("❗ 먼저 '관리자 설정' 탭에서 매장을 선택해주세요.")
+        st.warning("❗ 먼저 '로그인' 탭에서 매장을 선택해주세요.")
         return
 
     # 전체 고객 데이터 가져오기 (모든 상태 포함)
@@ -170,63 +216,141 @@ def show_customer_view(sheets_manager, store_code=None):
     store_name = st.session_state.get("selected_store_name", get_store_name(store_code, sheets_manager))
     show_input_screen(store_name, store_code)
 
-# 로그인 화면
-
+# 수정된 로그인 화면
 def show_login(sheets_manager):
     if 'selected_store_name' in st.session_state:
         st.success(f"✅ 이미 로그인됨: {st.session_state['selected_store_name']}")
         return
+        
     st.subheader("🔐 매장 관리자 로그인")
-    store_code = st.text_input("🏪 매장 코드")
-    admin_id = st.text_input("👤 관리자 ID")
-    admin_pw = st.text_input("🔒 비밀번호", type="password")
-
-    if st.button("🔓 로그인"):
-        store = sheets_manager.get_store_by_code(store_code)
-
-        if not store:
-            st.error("❌ 매장 코드가 유효하지 않습니다.")
+    
+    # 모든 매장 목록 가져오기
+    try:
+        all_stores = sheets_manager.get_all_stores()
+        store_options = [f"{store['store_name']} ({store['team']})" for store in all_stores if store.get('store_name')]
+        
+        if not store_options:
+            st.error("❌ 등록된 매장이 없습니다.")
             return
+            
+        # 매장 선택 드롭다운
+        selected_display = st.selectbox("🏪 매장 선택", ["매장을 선택하세요..."] + store_options)
+        
+        if selected_display == "매장을 선택하세요...":
+            return
+            
+        # 선택된 매장명 추출 (괄호 앞부분)
+        selected_store_name = selected_display.split(" (")[0]
+        
+        admin_id = st.text_input("👤 관리자 ID")
+        admin_pw = st.text_input("🔒 비밀번호", type="password")
 
-        st.write("📋 입력값:", store_code, admin_id, admin_pw)
-        st.write("📋 시트값:", store.get("store_code"), store.get("admin_id"), store.get("admin_pw"))
+        if st.button("🔓 로그인"):
+            store = sheets_manager.get_store_by_name(selected_store_name)
 
-        if store.get("admin_id", "").strip() == admin_id.strip() and store.get("admin_pw", "").strip() == admin_pw.strip():
-            st.session_state['selected_store_code'] = store_code
-            st.session_state['selected_store_name'] = store['store_name']
-            st.success(f"{store['store_name']} 로그인 성공")
-            st.rerun()
-        else:
-            st.error("❌ 로그인 정보가 올바르지 않습니다.")
-
-
-# 관리자 설정 화면
-def show_store_admin_settings(sheets_manager):
-    st.subheader("🆕 관리자 등록 (최초 1회)")
-    store_code = st.text_input("🏪 매장 코드")
-
-    if store_code:
-        store = sheets_manager.get_store_by_code(store_code)
-        if store:
-            st.markdown(f"**{store['store_name']}** ({store_code})")
-            if store.get("admin_id"):
-                st.info("이미 등록된 매장입니다. 로그인 탭을 이용하세요.")
+            if not store:
+                st.error("❌ 매장 정보를 찾을 수 없습니다.")
                 return
 
-            admin_id = st.text_input("👤 관리자 ID")
-            admin_pw = st.text_input("🔒 관리자 비밀번호", type="password")
+            if store.get("admin_id", "").strip() == admin_id.strip() and store.get("admin_pw", "").strip() == admin_pw.strip():
+                st.session_state['selected_store_code'] = store['store_code']
+                st.session_state['selected_store_name'] = store['store_name']
+                st.success(f"✅ {store['store_name']} 로그인 성공!")
+                st.rerun()
+            else:
+                st.error("❌ 관리자 ID 또는 비밀번호가 올바르지 않습니다.")
+                
+    except Exception as e:
+        st.error(f"❌ 데이터를 불러오는 중 오류가 발생했습니다: {str(e)}")
 
-            if st.button("💾 저장"):
-                success = sheets_manager.set_store_admin(store_code, admin_id, admin_pw)
-                if success:
-                    st.session_state['selected_store_code'] = store_code
-                    st.session_state['selected_store_name'] = store['store_name']
-                    st.success("관리자 정보가 저장되었습니다.")
-                    st.rerun()
-                else:
-                    st.error("저장 실패: 해당 매장을 찾을 수 없습니다.")
-        else:
-            st.warning("유효한 매장 코드가 아닙니다.")
+# 수정된 관리자 설정 화면
+def show_store_admin_settings(sheets_manager):
+    st.subheader("🆕 관리자 등록 (최초 1회)")
+    
+    try:
+        # 팀 목록 가져오기
+        teams = sheets_manager.get_teams()
+        
+        if not teams:
+            st.error("❌ 등록된 팀이 없습니다.")
+            return
+            
+        # 팀 선택
+        selected_team = st.selectbox("👥 팀 선택", ["팀을 선택하세요..."] + teams)
+        
+        if selected_team == "팀을 선택하세요...":
+            return
+            
+        # 선택된 팀의 매장들 가져오기
+        team_stores = sheets_manager.get_stores_by_team(selected_team)
+        
+        if not team_stores:
+            st.warning(f"❗ {selected_team}에 등록된 매장이 없습니다.")
+            return
+            
+        # 매장 선택 (관리자가 미등록된 매장만 표시)
+        available_stores = [store for store in team_stores if not store.get('admin_id', '').strip()]
+        
+        if not available_stores:
+            st.info(f"ℹ️ {selected_team}의 모든 매장에 관리자가 이미 등록되어 있습니다.")
+            return
+            
+        store_names = [store['store_name'] for store in available_stores]
+        selected_store_name = st.selectbox("🏪 매장 선택", ["매장을 선택하세요..."] + store_names)
+        
+        if selected_store_name == "매장을 선택하세요...":
+            return
+            
+        # 선택된 매장 정보 표시
+        selected_store = next(store for store in available_stores if store['store_name'] == selected_store_name)
+        st.info(f"📍 선택된 매장: **{selected_store['store_name']}** ({selected_store['team']})")
+        
+        # 관리자 정보 입력
+        admin_id = st.text_input("👤 관리자 ID")
+        admin_pw = st.text_input("🔒 관리자 비밀번호", type="password")
+        admin_pw_confirm = st.text_input("🔒 비밀번호 확인", type="password")
+        
+        if admin_pw and admin_pw != admin_pw_confirm:
+            st.error("❌ 비밀번호가 일치하지 않습니다.")
+            
+        if st.button("💾 관리자 등록"):
+            if not admin_id.strip():
+                st.error("❌ 관리자 ID를 입력해주세요.")
+                return
+                
+            if not admin_pw.strip():
+                st.error("❌ 비밀번호를 입력해주세요.")
+                return
+                
+            if admin_pw != admin_pw_confirm:
+                st.error("❌ 비밀번호가 일치하지 않습니다.")
+                return
+                
+            success = sheets_manager.set_store_admin_by_name(selected_store_name, admin_id, admin_pw)
+            if success:
+                st.session_state['selected_store_code'] = selected_store['store_code']
+                st.session_state['selected_store_name'] = selected_store['store_name']
+                st.success(f"✅ {selected_store_name} 관리자 등록이 완료되었습니다!")
+                st.balloons()
+                time.sleep(2)
+                st.rerun()
+            else:
+                st.error("❌ 관리자 등록에 실패했습니다.")
+                
+    except Exception as e:
+        st.error(f"❌ 데이터를 불러오는 중 오류가 발생했습니다: {str(e)}")
+
+# 로그아웃 기능 추가
+def show_logout_button():
+    if 'selected_store_name' in st.session_state:
+        if st.button("🚪 로그아웃"):
+            # 세션 상태 초기화
+            if 'selected_store_code' in st.session_state:
+                del st.session_state['selected_store_code']
+            if 'selected_store_name' in st.session_state:
+                del st.session_state['selected_store_name']
+            st.success("✅ 로그아웃되었습니다.")
+            st.rerun()
 
 # 메인 함수
 def main():
@@ -240,8 +364,10 @@ def main():
     with st.sidebar:
         if 'selected_store_name' in st.session_state:
             st.markdown(f"**🔓 로그인됨:** `{st.session_state['selected_store_name']}`")
+            show_logout_button()  # 로그아웃 버튼 추가
         else:
             st.markdown("🔒 로그인되지 않음")
+            
         tab = st.radio("모드 선택", ["로그인", "고객 등록", "전산 처리", "관리자 등록"])
 
     if tab == "로그인":
