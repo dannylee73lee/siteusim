@@ -9,35 +9,13 @@ st.set_page_config(
 # Git/Streamlit 접근 차단 CSS 및 다크모드 최적화
 st.markdown("""
     <style>
-    /* Git/Streamlit 하단 링크 숨기기 (더 강화된 CSS) */
+    /* Git/Streamlit 하단 링크 숨기기 (master 권한자 외) */
     .stAppDeployButton,
     footer,
     .stDeployButton,
     #MainMenu,
-    header[data-testid="stHeader"],
-    .viewerBadge_container__1QSob,
-    .styles_viewerBadge__1yB5_,
-    footer[data-testid="stFooter"],
-    div[data-testid="stToolbar"],
-    .reportview-container .main footer,
-    .reportview-container .main footer[data-testid="stFooter"],
-    .css-hi6a2p,
-    .css-9s5bis,
-    .edgvbvh3,
-    .css-1d391kg,
-    .stActionButton,
-    .stDecoration {
+    header[data-testid="stHeader"] {
         visibility: hidden !important;
-        display: none !important;
-        height: 0 !important;
-        width: 0 !important;
-        position: absolute !important;
-        top: -9999px !important;
-    }
-    
-    /* 추가적인 숨김 처리 */
-    a[href*="streamlit.io"],
-    a[href*="github.com"] {
         display: none !important;
     }
     
@@ -105,6 +83,15 @@ st.markdown("""
             background-color: #1a3d1a !important;
             color: #fafafa !important;
         }
+    }
+    
+    /* 라이트모드에서도 접근 제한 유지 */
+    .stAppDeployButton,
+    footer,
+    .stDeployButton,
+    #MainMenu {
+        visibility: hidden !important;
+        display: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -332,7 +319,7 @@ def show_admin_view(sheets_manager, store_code=None):
 
             st.markdown("""</div></div>""", unsafe_allow_html=True)
 
-# 고객 등록 화면 (기존 코드와 연동) - 성공 효과 추가
+# 고객 등록 화면 (기존 코드와 연동)
 def show_customer_view(sheets_manager, store_code=None):
     # 다크모드 최적화 CSS 추가
     st.markdown("""
@@ -360,27 +347,16 @@ def show_customer_view(sheets_manager, store_code=None):
         }
         </style>
     """, unsafe_allow_html=True)
-    
     from Home import show_input_screen, get_store_name
 
     store_code = store_code or st.session_state.get("selected_store_code", "STORE001")
     store_name = st.session_state.get("selected_store_name", get_store_name(store_code, sheets_manager))
-    
-    # 고객 등록 성공시 효과를 위한 세션 상태 체크
-    if st.session_state.get('customer_registration_success', False):
-        st.balloons()
-        st.success("🎉 고객 등록이 완료되었습니다!")
-        time.sleep(2)
-        # 성공 플래그 초기화
-        st.session_state.customer_registration_success = False
-        st.rerun()
-    
     show_input_screen(store_name, store_code)
 
 # 수정된 로그인 화면
 def show_login(sheets_manager):
     if 'selected_store_name' in st.session_state:
-        st.success(f"✅ 로그인 성공! 왼쪽 사이드바 메뉴에서 선택해주세요~ ({st.session_state['selected_store_name']})")
+        st.success(f"✅ 이미 로그인됨: {st.session_state['selected_store_name']}")
         return
         
     st.subheader("🔐 매장 관리자 로그인")
