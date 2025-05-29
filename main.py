@@ -6,12 +6,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Super Admin 권한 체크 및 하단 링크 숨기기
+# Streamlit 요소 숨기기 함수 (수정된 버전)
 def hide_streamlit_elements():
-    # Super Admin이 아닌 경우 하단 요소들 숨기기
-    is_super_admin = st.session_state.get('is_super_admin', False)
+    # Admin이 아닌 일반 user는 하단 요소들 숨기기
+    admin_level = st.session_state.get('admin_level', 'user')
     
-    if not is_super_admin:
+    if admin_level == 'user':
         st.markdown("""
         <style>
         /* Streamlit 하단 링크 및 기타 요소 숨기기 */
@@ -340,11 +340,30 @@ def show_customer_view(sheets_manager, store_code=None):
     store_name = st.session_state.get("selected_store_name", get_store_name(store_code, sheets_manager))
     show_input_screen(store_name, store_code)
 
-# Super Admin 체크 함수
-def check_super_admin(admin_id):
-    """Super Admin 권한 체크"""
-    super_admin_ids = ["super_admin", "admin", "master"]  # 필요에 따라 수정
-    return admin_id.lower() in super_admin_ids
+# Admin 권한 체크 함수 (수정된 버전)
+def check_admin_level(admin_id):
+    """Admin 권한 체크 - user와 admin 구분"""
+    # 방법 1: 환경변수 사용 (권장)
+    import os
+    admin_list = os.getenv('ADMIN_IDS', 'admin').split(',')
+    admin_ids = [admin.strip().lower() for admin in admin_list]
+    
+    # 방법 2: Google Sheets의 별도 시트 사용하는 경우 (아래 주석 해제)
+    # try:
+    #     workbook = init_google_sheets()[0]
+    #     if workbook:
+    #         admin_sheet = workbook.worksheet("admins")  # admins 시트 필요
+    #         admin_records = admin_sheet.get_all_records()
+    #         admin_ids = [record['admin_id'].lower() for record in admin_records if record.get('admin_id')]
+    #     else:
+    #         admin_ids = ["admin"]  # 기본값
+    # except:
+    #     admin_ids = ["admin"]  # 오류 시 기본값
+    
+    if admin_id.lower() in admin_ids:
+        return "admin"  # 관리자 권한
+    else:
+        return "user"   # 일반 사용자 권한
 
 # 수정된 로그인 화면
 def show_login(sheets_manager):
@@ -412,8 +431,8 @@ def show_login(sheets_manager):
                 st.session_state['selected_store_code'] = store['store_code']
                 st.session_state['selected_store_name'] = store['store_name']
                 
-                # Super Admin 권한 체크
-                st.session_state['is_super_admin'] = check_super_admin(admin_id)
+                # Admin 권한 레벨 체크
+                st.session_state['admin_level'] = check_admin_level(admin_id)
                 
                 st.success(f"✅ {store['store_name']} 로그인 성공!")
                 st.rerun()
@@ -505,10 +524,10 @@ def show_logout_button():
     if 'selected_store_name' in st.session_state:
         if st.button("🚪 로그아웃"):
             # 세션 상태 초기화
-            if 'selected_store_code' in st.session_state:
-                del st.session_state['selected_store_code']
-            if 'selected_store_name' in st.session_state:
-                del st.session_state['selected_store_name']
+            keys_to_remove = ['selected_store_code', 'selected_store_name', 'admin_level']
+            for key in keys_to_remove:
+                if key in st.session_state:
+                    del st.session_state[key]
             st.success("✅ 로그아웃되었습니다.")
             st.rerun()
 
@@ -528,8 +547,8 @@ def main():
     with st.sidebar:
         if 'selected_store_name' in st.session_state:
             store_name = st.session_state['selected_store_name']
-            is_super_admin = st.session_state.get('is_super_admin', False)
-            admin_badge = " 🔑" if is_super_admin else ""
+            admin_level = st.session_state.get('admin_level', 'user')
+            admin_badge = " 🔑" if admin_level == 'admin' else " 👤"
             st.markdown(f"**🔓 로그인됨:** `{store_name}`{admin_badge}")
             show_logout_button()  # 로그아웃 버튼 추가
         else:
