@@ -496,8 +496,6 @@ def register_customer(phone, name, store_code, service_type, sheets_manager):
         ticket_number = sheets_manager.add_customer(masked_name, masked_phone, service_type, store_code)
         
         if ticket_number:
-            # 🎉 고객 등록 성공시 효과 플래그 설정
-            st.session_state.customer_registration_success = True
             return ticket_number, "등록 성공"
         else:
             return None, "등록 중 오류가 발생했습니다."
@@ -565,15 +563,6 @@ def main():
 
 def show_input_screen(store_name, store_code):
     """고객 입력 화면"""
-    
-    # 🎉 고객 등록 성공시 효과 체크 (관리자 화면과 연동)
-    if st.session_state.get('customer_registration_success', False):
-        st.balloons()
-        st.success("🎉 고객 등록이 완료되었습니다!")
-        time.sleep(2)
-        # 성공 플래그 초기화
-        st.session_state.customer_registration_success = False
-        st.rerun()
     
     # 현재 대기 현황
     waiting_count, estimated_time = get_current_status(store_code, sheets_manager)
