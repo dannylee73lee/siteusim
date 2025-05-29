@@ -21,28 +21,36 @@ import json  # 상단에 추가
 
 # Google Sheets 연결 설정
 @st.cache_resource
-@st.cache_resource
 def init_google_sheets():
     """Google Sheets 연결 초기화"""
     try:
-        # Streamlit Cloud 환경 (secrets 사용)
         if "google_sheets" in st.secrets:
-            credentials_raw = st.secrets["google_sheets"]["credentials"]
-            sheets_url = st.secrets["google_sheets"]["sheets_url"]
-            
+            secrets_data = st.secrets["google_sheets"]
+            st.write("✅ st.secrets['google_sheets'] 내용:", secrets_data)  # 디버깅용 출력
+
+            credentials_raw = secrets_data.get("credentials")
+            sheets_url = secrets_data.get("sheets_url")
+
+            # 디버깅: 키 존재 여부
+            if not credentials_raw:
+                st.error("❌ secrets에 'credentials' 키가 없습니다.")
+                return None, None
+            if not sheets_url:
+                st.error("❌ secrets에 'sheets_url' 키가 없습니다.")
+                return None, None
+
             # JSON 문자열이면 파싱
             if isinstance(credentials_raw, str):
                 credentials_dict = json.loads(credentials_raw)
             else:
                 credentials_dict = credentials_raw
         else:
-            # 로컬 환경 (credentials.json 파일 사용)
+            # 로컬 환경 처리
             credentials_path = Path("credentials.json")
             if not credentials_path.exists():
-                st.error("❌ credentials.json 파일이 없습니다. 설정 가이드를 참고하세요.")
+                st.error("❌ credentials.json 파일이 없습니다.")
                 return None, None
 
-            # 환경변수에서 Google Sheets URL 읽기
             try:
                 from dotenv import load_dotenv
                 load_dotenv()
@@ -58,7 +66,6 @@ def init_google_sheets():
             "https://www.googleapis.com/auth/drive"
         ]
 
-        # 자격 증명 생성
         if isinstance(credentials_dict, str) and Path(credentials_dict).exists():
             creds = Credentials.from_service_account_file(credentials_dict, scopes=scope)
         else:
@@ -66,7 +73,6 @@ def init_google_sheets():
 
         client = gspread.authorize(creds)
 
-        # 스프레드시트 열기
         if sheets_url:
             sheet_id = sheets_url.split("/d/")[1].split("/")[0]
             workbook = client.open_by_key(sheet_id)
