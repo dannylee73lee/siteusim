@@ -13,241 +13,7 @@ import random
 # Google Sheets 연결 설정
 @st.cache_resource
 def init_google_sheets():
-    
-    # 입력 폼 헤더
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 25px; padding: 30px; margin: 20px 0; text-align: center;">
-        <h3 style="color: white; margin: 0;">✍️ 간단 정보 입력</h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 자동 새로고침 버튼
-    if st.button("🔄 현황 새로고침", use_container_width=True):
-        st.rerun()
-    
-    # 설정 정보 가져오기
-    settings = sheets_manager.get_settings()
-    
-    # 세션 상태에 폼 초기화 플래그 추가
-    if 'form_reset' not in st.session_state:
-        st.session_state.form_reset = False
-    
-    with st.form("customer_registration", clear_on_submit=st.session_state.form_reset):
-        col1, col2 = st.columns([1, 1])
-        
-        with col1:
-            phone = st.text_input(
-                "📱 전화번호",
-                placeholder="01012345678",
-                help="숫자만 입력하세요 (하이픈 없이)",
-                value="" if st.session_state.form_reset else st.session_state.get("phone_value", "")
-            )
-        
-        with col2:
-            name = st.text_input(
-                "👤 이름", 
-                placeholder="홍길동",
-                help="실명을 입력해주세요",
-                value="" if st.session_state.form_reset else st.session_state.get("name_value", "")
-            )
-        
-        # 서비스 유형 선택
-        service_options = [
-            f"유심교체 ({settings.get('usim_change_time', 3)}분)",
-            f"유심재설정 ({settings.get('usim_reset_time', 3)}분)",
-            f"기타 ({settings.get('other_service_time', 10)}분)"
-        ]
-        service_type = st.selectbox(
-            "방문 목적", 
-            service_options,
-            index=0 if st.session_state.form_reset else st.session_state.get("service_index", 0)
-        )
-        service_name = service_type.split(' (')[0]  # "유심교체 (3분)" -> "유심교체"
-        
-        # 실시간 미리보기
-        preview_container = st.container()
-        
-        # 등록 버튼
-        submitted = st.form_submit_button(
-            "🎫 대기번호 받기",
-            use_container_width=True
-        )
-        
-        # 미리보기 표시
-        with preview_container:
-            if phone:
-                formatted_phone = format_phone_number(phone)
-                masked_phone = mask_phone(formatted_phone, is_admin_view=False)  # 고객 화면이므로 마스킹
-                st.caption(f"📱 형식: {formatted_phone}")
-                st.caption(f"🔒 표시: {masked_phone}")
-            
-            if name:
-                masked_name = mask_name(name)
-                st.caption(f"🔒 저장될 이름: {masked_name}")
-        
-        if submitted:
-            # 입력값을 세션 상태에 임시 저장
-            st.session_state.phone_value = phone
-            st.session_state.name_value = name
-            st.session_state.service_index = service_options.index(service_type)
-            
-            is_valid, message = validate_input(phone, name)
-            
-            if is_valid:
-                with st.spinner("등록 중..."):
-                    store_ticket_number, result_message = register_customer(phone, name, store_code, service_name, sheets_manager)
-                    
-                    if store_ticket_number:
-                        st.success(f"✅ 등록 완료! 매장 티켓 번호: {store_ticket_number}번")
-                        
-                        # 폼 초기화 플래그 설정
-                        st.session_state.form_reset = True
-                        st.session_state.phone_value = ""
-                        st.session_state.name_value = ""
-                        st.session_state.service_index = 0
-                        
-                        st.session_state.ticket_number = store_ticket_number
-                        st.session_state.show_ticket = True
-                        st.session_state.ticket_time = time.time()
-                        time.sleep(2)  # 사용자가 메시지를 볼 수 있도록
-                        st.rerun()
-                    else:
-                        # 중복 전화번호 등 오류 메시지 표시
-                        st.error(f"❌ {result_message}")
-            else:
-                st.error(f"❌ {message}")
-        
-        # 폼 초기화 플래그 리셋
-        if st.session_state.form_reset:
-            st.session_state.form_reset = False
-    
-    # 빠른 팁 - 새로운 디자인
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 20px; padding: 25px; margin: 20px 0; color: white;">
-        <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.3rem;">💡 이용 안내</h3>
-        <div style="line-height: 1.8; font-size: 1rem;">
-            • 전화번호는 숫자만 입력하세요<br>
-            • 대기번호 발급 후 호출시까지 대기해주세요<br>
-            • 예상시간은 실시간으로 변동될 수 있습니다<br>
-            • 고객님의 개인정보는 필요한 목적에만 사용되며, 알아볼 수 없도록 처리한 뒤 안전하게 보관·삭제됩니다.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-def show_ticket_screen():
-    """대기번호 발급 화면"""
-    
-    st.markdown(f"""
-    <div class="ticket-result">
-        <div style="font-size: 3rem; margin-bottom: 20px;">🎉</div>
-        <div class="ticket-number">{st.session_state.ticket_number}번</div>
-        <div style="font-size: 1.3rem; line-height: 1.8;">
-            <strong>대기번호가 발급되었습니다!</strong><br>
-            호출시 창구로 와주세요<br><br>
-            📞 휴대폰과 신분증을 준비해주세요
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 즉시 초기화 버튼
-    if st.button("🏠 처음으로 돌아가기"):
-        st.session_state.show_ticket = False
-        st.session_state.ticket_number = None
-        st.session_state.ticket_time = None
-        st.rerun()
-    
-    # 자동 복귀 카운트다운 표시
-    if st.session_state.ticket_time:
-        elapsed = time.time() - st.session_state.ticket_time
-        remaining = max(0, 5 - int(elapsed))
-        
-        if remaining > 0:
-            st.info(f"⏰ {remaining}초 후 자동으로 처음 화면으로 돌아갑니다...")
-            # 짧은 간격으로 페이지 새로고침하여 카운트다운 업데이트
-            time.sleep(1)
-            st.rerun()
-        else:
-            # 5초가 지나면 자동으로 초기화
-            st.session_state.show_ticket = False
-            st.session_state.ticket_number = None
-            st.session_state.ticket_time = None
-            st.rerun()
-
-# 메인 함수 (사용 예시)
-def main():
-    """메인 함수 - 사용 예시"""
-    st.set_page_config(
-        page_title="유심 교체 서비스",
-        page_icon="📱",
-        layout="centered"
-    )
-    
-    # 매장 정보 설정 (실제로는 URL 파라미터나 다른 방식으로 전달)
-    store_code = st.query_params.get("store", "STORE001")
-    
-    # Google Sheets 연결
-    workbook, client = init_google_sheets()
-    if workbook is None:
-        st.error("🔧 Google Sheets 설정이 필요합니다.")
-        st.stop()
-    
-    sheets_manager = SheetsManager(workbook)
-    store_name = get_store_name(store_code, sheets_manager)
-    
-    # 고객 입력 화면 표시
-    show_input_screen(store_name, store_code)
-
-# 추가 유틸리티 함수들
-def get_store_waiting_summary(sheets_manager):
-    """모든 매장의 대기 현황 요약"""
-    try:
-        all_stores = sheets_manager.get_all_stores()
-        summary = []
-        
-        for store in all_stores:
-            store_code = store['store_code']
-            store_name = store['store_name']
-            waiting_count, estimated_time = get_current_status(store_code, sheets_manager)
-            next_ticket = sheets_manager.get_next_store_ticket_number(store_code)
-            
-            summary.append({
-                'store_code': store_code,
-                'store_name': store_name,
-                'waiting_count': waiting_count,
-                'estimated_time': estimated_time,
-                'next_ticket': next_ticket
-            })
-        
-        return summary
-    except Exception as e:
-        return []
-
-def get_store_ticket_history(store_code, sheets_manager, days=7):
-    """특정 매장의 최근 티켓 발급 이력"""
-    try:
-        customers = sheets_manager.get_customers(store_code)
-        
-        # 최근 N일간 데이터 필터링
-        cutoff_date = datetime.now() - timedelta(days=days)
-        recent_customers = [
-            c for c in customers 
-            if c.get('registered_time') and c['registered_time'] >= cutoff_date
-        ]
-        
-        # 날짜별 발급 수 집계
-        daily_counts = {}
-        for customer in recent_customers:
-            date_key = customer['registered_time'].strftime('%Y-%m-%d')
-            if date_key not in daily_counts:
-                daily_counts[date_key] = 0
-            daily_counts[date_key] += 1
-        
-        return daily_counts
-    except Exception as e:
-        return {}
-
-if __name__ == "__main__":
-    main()"""Google Sheets 연결 초기화"""
+    """Google Sheets 연결 초기화"""
     try:
         # Streamlit Cloud 환경 (secrets 사용)
         if "google_sheets" in st.secrets:
@@ -295,7 +61,7 @@ if __name__ == "__main__":
         st.error(f"❌ Google Sheets 연결 오류: {str(e)}")
         return None, None
 
-# CSS 스타일 (원본 첫 번째 코드 스타일 유지)
+# CSS 스타일
 def load_css():
     return """
     <style>
@@ -370,20 +136,19 @@ def load_css():
     </style>
     """
 
-# 개인정보 마스킹 함수들 (수정됨)
+# 개인정보 마스킹 함수들
 def mask_phone(phone, is_admin_view=False):
-    """전화번호 마스킹 - 관리자 화면에서는 마스킹 없음"""
+    """전화번호 마스킹"""
     if is_admin_view:
-        return phone  # 전산 담당자는 전화번호 전체 표시
+        return phone
     else:
-        # 고객용: 뒷 4자리만 표시
         numbers = ''.join(filter(str.isdigit, phone))
         if len(numbers) == 11:
             return f"{numbers[:3]}-****-{numbers[7:]}"
         return phone
 
 def mask_name(name):
-    """이름 가운데 마스킹 (모든 사용자에게 동일 적용)"""
+    """이름 마스킹"""
     if len(name) <= 1:
         return name
     elif len(name) == 2:
@@ -396,13 +161,11 @@ def mask_name(name):
         return name[0] + '*' * (len(name) - 2) + name[-1]
 
 def format_korean_datetime(dt=None):
-    """한국 시간 형식으로 변환 (25-05-30, 10:20 AM)"""
+    """한국 시간 형식으로 변환"""
     if dt is None:
-        # 한국 시간대로 현재 시간 생성
         korea_tz = pytz.timezone('Asia/Seoul')
         dt = datetime.now(korea_tz)
     elif dt.tzinfo is None:
-        # 시간대 정보가 없으면 한국 시간대로 설정
         korea_tz = pytz.timezone('Asia/Seoul')
         dt = korea_tz.localize(dt)
     
@@ -425,7 +188,7 @@ def is_phone_duplicate(stored_phone, input_phone):
     
     return stored_phone == formatted_input
 
-# Google Sheets 데이터 관리 클래스 (수정됨)
+# Google Sheets 데이터 관리 클래스
 class SheetsManager:
     def __init__(self, workbook):
         self.workbook = workbook
@@ -476,7 +239,7 @@ class SheetsManager:
         return None
     
     def get_customers(self, store_code=None):
-        """고객 목록 조회 - store_ticket_number 처리 추가"""
+        """고객 목록 조회"""
         try:
             sheet = self.workbook.worksheet("customers")
             all_values = sheet.get_all_values()
@@ -510,7 +273,7 @@ class SheetsManager:
                     except (ValueError, AttributeError):
                         row_dict['id'] = 0
                     
-                    # store_ticket_number 처리 추가
+                    # store_ticket_number 처리
                     if row_dict.get('store_ticket_number'):
                         try:
                             row_dict['store_ticket_number'] = int(row_dict['store_ticket_number'])
@@ -574,19 +337,7 @@ class SheetsManager:
             headers = all_values[0]
             if "store_ticket_number" not in headers:
                 headers.append("store_ticket_number")
-                # 기존 행들의 길이를 맞춰주기 위해 빈 컬럼 추가
-                for i in range(len(all_values)):
-                    if i == 0:
-                        continue  # 헤더는 이미 추가함
-                    while len(all_values[i]) < len(headers):
-                        all_values[i].append('')
-                
-                # 전체 시트 업데이트
-                if len(all_values) > 1:
-                    sheet.clear()
-                    sheet.update('A1', all_values)
-                else:
-                    sheet.update('A1:I1', [headers])
+                sheet.update('A1:I1', [headers])
             
             # 전체 ID와 매장별 티켓 번호 계산
             new_id = 1
@@ -607,9 +358,9 @@ class SheetsManager:
                                     continue
                             
                             # 같은 매장의 티켓 번호 수집
-                            if len(row) > 6 and row[6] == store_code:  # store_code 컬럼 확인
+                            if len(row) > 6 and row[6] == store_code:
                                 # store_ticket_number가 있는 경우
-                                if len(row) > 8 and row[8]:  # store_ticket_number 컬럼
+                                if len(row) > 8 and row[8]:
                                     try:
                                         store_ticket_numbers.append(int(row[8]))
                                     except (ValueError, IndexError):
@@ -635,7 +386,7 @@ class SheetsManager:
             estimated_time = 3 if service_type in ["유심교체", "유심재설정"] else 10
             current_time = format_korean_datetime()
             
-            # 새 행 데이터 준비 (store_ticket_number 추가)
+            # 새 행 데이터 준비
             new_row = [
                 str(new_id),
                 str(name),
@@ -645,12 +396,12 @@ class SheetsManager:
                 "대기",
                 str(store_code),
                 str(estimated_time),
-                str(store_ticket_number)  # 매장별 티켓 번호
+                str(store_ticket_number)
             ]
             
             # 행 추가
             sheet.append_row(new_row)
-            return store_ticket_number  # 매장별 티켓 번호 반환
+            return store_ticket_number
             
         except gspread.exceptions.WorksheetNotFound:
             try:
@@ -794,14 +545,14 @@ class SheetsManager:
         except Exception:
             return 1
 
-# 헬퍼 함수들 (수정됨)
+# 헬퍼 함수들
 def get_store_name(store_code, sheets_manager):
     """매장 코드로 매장명 가져오기"""
     store_info = sheets_manager.get_store_by_code(store_code)
     if store_info:
         return store_info['store_name']
     
-    # 기본 매장 맵 (fallback)
+    # 기본 매장 맵
     store_map = {
         'STORE001': '강남점',
         'STORE002': '홍대점', 
@@ -810,19 +561,19 @@ def get_store_name(store_code, sheets_manager):
     return store_map.get(store_code, '테스트점')
 
 def get_current_status(store_code, sheets_manager):
-    """현재 대기 현황 가져오기 - 매장별로 정확한 계산"""
+    """현재 대기 현황 가져오기"""
     try:
         customers = sheets_manager.get_customers(store_code)
         waiting_customers = [c for c in customers if c['status'] == '대기']
         waiting_count = len(waiting_customers)
         
-        # 대기 중인 고객들의 예상 시간 합계로 더 정확한 계산
+        # 대기 중인 고객들의 예상 시간 합계
         total_estimated_time = 0
         for customer in waiting_customers:
             estimated_time = int(customer.get('estimated_time', 5))
             total_estimated_time += estimated_time
         
-        # 기본 대기시간 추가 (처리 시간 변동성 고려)
+        # 기본 대기시간 추가
         total_estimated_time += random.randint(0, 5)
         
         return waiting_count, total_estimated_time
@@ -855,7 +606,6 @@ def register_customer(phone, name, store_code, service_type, sheets_manager):
     try:
         formatted_phone = format_phone_number(phone)
         masked_name = mask_name(name)
-        # 실제 저장시에는 원본 전화번호 저장
         stored_phone = formatted_phone
         
         # 중복 확인
@@ -865,7 +615,7 @@ def register_customer(phone, name, store_code, service_type, sheets_manager):
             if is_phone_duplicate(customer['phone'], formatted_phone):
                 return None, "이미 등록된 전화번호입니다."
         
-        # 고객 추가 (매장별 티켓 번호 반환)
+        # 고객 추가
         store_ticket_number = sheets_manager.add_customer(masked_name, stored_phone, service_type, store_code)
         
         if store_ticket_number:
@@ -891,7 +641,7 @@ def show_input_screen(store_name, store_code):
     if 'ticket_time' not in st.session_state:
         st.session_state.ticket_time = None
     
-    # SheetsManager 인스턴스 가져오기 (main에서 전달받아야 함)
+    # SheetsManager 인스턴스 가져오기
     workbook, client = init_google_sheets()
     if workbook is None:
         st.error("🔧 Google Sheets 설정이 필요합니다.")
@@ -941,3 +691,236 @@ def show_customer_input_form(store_name, store_code, sheets_manager):
             <p style="margin: 5px 0; font-size: 2.2rem; font-weight: bold; color: #667eea;">약 {estimated_time}분</p>
         </div>
         """, unsafe_allow_html=True)
+    
+    # 입력 폼 헤더
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 25px; padding: 30px; margin: 20px 0; text-align: center;">
+        <h3 style="color: white; margin: 0;">✍️ 간단 정보 입력</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 자동 새로고침 버튼
+    if st.button("🔄 현황 새로고침", use_container_width=True):
+        st.rerun()
+    
+    # 설정 정보 가져오기
+    settings = sheets_manager.get_settings()
+    
+    # 세션 상태에 폼 초기화 플래그 추가
+    if 'form_reset' not in st.session_state:
+        st.session_state.form_reset = False
+    
+    with st.form("customer_registration", clear_on_submit=st.session_state.form_reset):
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            phone = st.text_input(
+                "📱 전화번호",
+                placeholder="01012345678",
+                help="숫자만 입력하세요 (하이픈 없이)",
+                value="" if st.session_state.form_reset else st.session_state.get("phone_value", "")
+            )
+        
+        with col2:
+            name = st.text_input(
+                "👤 이름", 
+                placeholder="홍길동",
+                help="실명을 입력해주세요",
+                value="" if st.session_state.form_reset else st.session_state.get("name_value", "")
+            )
+        
+        # 서비스 유형 선택
+        service_options = [
+            f"유심교체 ({settings.get('usim_change_time', 3)}분)",
+            f"유심재설정 ({settings.get('usim_reset_time', 3)}분)",
+            f"기타 ({settings.get('other_service_time', 10)}분)"
+        ]
+        service_type = st.selectbox(
+            "방문 목적", 
+            service_options,
+            index=0 if st.session_state.form_reset else st.session_state.get("service_index", 0)
+        )
+        service_name = service_type.split(' (')[0]  # "유심교체 (3분)" -> "유심교체"
+        
+        # 실시간 미리보기
+        preview_container = st.container()
+        
+        # 등록 버튼
+        submitted = st.form_submit_button(
+            "🎫 대기번호 받기",
+            use_container_width=True
+        )
+        
+        # 미리보기 표시
+        with preview_container:
+            if phone:
+                formatted_phone = format_phone_number(phone)
+                masked_phone = mask_phone(formatted_phone, is_admin_view=False)
+                st.caption(f"📱 형식: {formatted_phone}")
+                st.caption(f"🔒 표시: {masked_phone}")
+            
+            if name:
+                masked_name = mask_name(name)
+                st.caption(f"🔒 저장될 이름: {masked_name}")
+        
+        if submitted:
+            # 입력값을 세션 상태에 임시 저장
+            st.session_state.phone_value = phone
+            st.session_state.name_value = name
+            st.session_state.service_index = service_options.index(service_type)
+            
+            is_valid, message = validate_input(phone, name)
+            
+            if is_valid:
+                with st.spinner("등록 중..."):
+                    store_ticket_number, result_message = register_customer(phone, name, store_code, service_name, sheets_manager)
+                    
+                    if store_ticket_number:
+                        st.success(f"✅ 등록 완료! 매장 티켓 번호: {store_ticket_number}번")
+                        
+                        # 폼 초기화 플래그 설정
+                        st.session_state.form_reset = True
+                        st.session_state.phone_value = ""
+                        st.session_state.name_value = ""
+                        st.session_state.service_index = 0
+                        
+                        st.session_state.ticket_number = store_ticket_number
+                        st.session_state.show_ticket = True
+                        st.session_state.ticket_time = time.time()
+                        time.sleep(2)
+                        st.rerun()
+                    else:
+                        st.error(f"❌ {result_message}")
+            else:
+                st.error(f"❌ {message}")
+        
+        # 폼 초기화 플래그 리셋
+        if st.session_state.form_reset:
+            st.session_state.form_reset = False
+    
+    # 빠른 팁
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 20px; padding: 25px; margin: 20px 0; color: white;">
+        <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.3rem;">💡 이용 안내</h3>
+        <div style="line-height: 1.8; font-size: 1rem;">
+            • 전화번호는 숫자만 입력하세요<br>
+            • 대기번호 발급 후 호출시까지 대기해주세요<br>
+            • 예상시간은 실시간으로 변동될 수 있습니다<br>
+            • 고객님의 개인정보는 필요한 목적에만 사용되며, 알아볼 수 없도록 처리한 뒤 안전하게 보관·삭제됩니다.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def show_ticket_screen():
+    """대기번호 발급 화면"""
+    
+    st.markdown(f"""
+    <div class="ticket-result">
+        <div style="font-size: 3rem; margin-bottom: 20px;">🎉</div>
+        <div class="ticket-number">{st.session_state.ticket_number}번</div>
+        <div style="font-size: 1.3rem; line-height: 1.8;">
+            <strong>대기번호가 발급되었습니다!</strong><br>
+            호출시 창구로 와주세요<br><br>
+            📞 휴대폰과 신분증을 준비해주세요
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 즉시 초기화 버튼
+    if st.button("🏠 처음으로 돌아가기"):
+        st.session_state.show_ticket = False
+        st.session_state.ticket_number = None
+        st.session_state.ticket_time = None
+        st.rerun()
+    
+    # 자동 복귀 카운트다운 표시
+    if st.session_state.ticket_time:
+        elapsed = time.time() - st.session_state.ticket_time
+        remaining = max(0, 5 - int(elapsed))
+        
+        if remaining > 0:
+            st.info(f"⏰ {remaining}초 후 자동으로 처음 화면으로 돌아갑니다...")
+            time.sleep(1)
+            st.rerun()
+        else:
+            # 5초가 지나면 자동으로 초기화
+            st.session_state.show_ticket = False
+            st.session_state.ticket_number = None
+            st.session_state.ticket_time = None
+            st.rerun()
+
+# 메인 함수
+def main():
+    """메인 함수"""
+    st.set_page_config(
+        page_title="유심 교체 서비스",
+        page_icon="📱",
+        layout="centered"
+    )
+    
+    # 매장 정보 설정
+    store_code = st.query_params.get("store", "STORE001")
+    
+    # Google Sheets 연결
+    workbook, client = init_google_sheets()
+    if workbook is None:
+        st.error("🔧 Google Sheets 설정이 필요합니다.")
+        st.stop()
+    
+    sheets_manager = SheetsManager(workbook)
+    store_name = get_store_name(store_code, sheets_manager)
+    
+    # 고객 입력 화면 표시
+    show_input_screen(store_name, store_code)
+
+# 추가 유틸리티 함수들
+def get_store_waiting_summary(sheets_manager):
+    """모든 매장의 대기 현황 요약"""
+    try:
+        all_stores = sheets_manager.get_all_stores()
+        summary = []
+        
+        for store in all_stores:
+            store_code = store['store_code']
+            store_name = store['store_name']
+            waiting_count, estimated_time = get_current_status(store_code, sheets_manager)
+            next_ticket = sheets_manager.get_next_store_ticket_number(store_code)
+            
+            summary.append({
+                'store_code': store_code,
+                'store_name': store_name,
+                'waiting_count': waiting_count,
+                'estimated_time': estimated_time,
+                'next_ticket': next_ticket
+            })
+        
+        return summary
+    except Exception as e:
+        return []
+
+def get_store_ticket_history(store_code, sheets_manager, days=7):
+    """특정 매장의 최근 티켓 발급 이력"""
+    try:
+        customers = sheets_manager.get_customers(store_code)
+        
+        # 최근 N일간 데이터 필터링
+        cutoff_date = datetime.now() - timedelta(days=days)
+        recent_customers = [
+            c for c in customers 
+            if c.get('registered_time') and c['registered_time'] >= cutoff_date
+        ]
+        
+        # 날짜별 발급 수 집계
+        daily_counts = {}
+        for customer in recent_customers:
+            date_key = customer['registered_time'].strftime('%Y-%m-%d')
+            if date_key not in daily_counts:
+                daily_counts[date_key] = 0
+            daily_counts[date_key] += 1
+        
+        return daily_counts
+    except Exception as e:
+        return {}
+
+if __name__ == "__main__":
+    main()
