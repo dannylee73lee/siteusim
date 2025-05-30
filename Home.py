@@ -196,11 +196,10 @@ class SheetsManager:
     def __init__(self, workbook):
         self.workbook = workbook
         
-    @st.cache_data(ttl=300)  # 5분간 캐시
-    def get_all_stores(_self):
-        """모든 매장 정보 조회 (캐시 적용)"""
+    def get_all_stores(self):
+        """모든 매장 정보 조회"""
         try:
-            sheet = _self.workbook.worksheet("stores")
+            sheet = self.workbook.worksheet("stores")
             all_values = sheet.get_all_values()
             
             if not all_values or len(all_values) < 2:
@@ -242,9 +241,8 @@ class SheetsManager:
                 return store
         return None
     
-    @st.cache_data(ttl=60)  # 1분간 캐시
-    def get_customers(_self, store_code=None):
-        """고객 목록 조회 (캐시 적용)"""
+    def get_customers(self, store_code=None):
+        """고객 목록 조회"""
         try:
             sheet = self.workbook.worksheet("customers")
             all_values = sheet.get_all_values()
@@ -429,10 +427,9 @@ class SheetsManager:
                 'other_service_time': 10
             }
 
-    @st.cache_data(ttl=300)  # 5분간 캐시
-    def get_teams(_self):
-        """모든 팀 목록 가져오기 (캐시 적용)"""
-        stores = _self.get_all_stores()
+    def get_teams(self):
+        """모든 팀 목록 가져오기"""
+        stores = self.get_all_stores()
         teams = list(set([store['team'] for store in stores if store.get('team')]))
         return sorted(teams)
     
@@ -470,52 +467,18 @@ class SheetsManager:
                 return True
         return False
 
-    def set_store_customer_account_by_name(self, store_name, user_id, user_pw):
-        """매장명으로 고객 계정 정보 설정"""
-        sheet = self.workbook.worksheet("stores")
-        all_values = sheet.get_all_values()
-        headers = all_values[0]
-        
-        try:
-            store_name_idx = headers.index("store_name")
-            user_id_idx = headers.index("user_id")
-            user_pw_idx = headers.index("user_pw")
-        except ValueError:
-            return False
-            
-        for i, row in enumerate(all_values[1:], start=2):
-            if row[store_name_idx] == store_name:
-                sheet.update_cell(i, user_id_idx + 1, user_id)
-                sheet.update_cell(i, user_pw_idx + 1, user_pw)
-                return True
-        return False
-
     def update_customer_status(self, customer_id, new_status):
         """고객 상태 업데이트"""
         try:
             sheet = self.workbook.worksheet("customers")
             all_values = sheet.get_all_values()
             headers = all_values[0]
-            
-            # 상태 업데이트 성공 여부 확인
-            updated = False
             for i, row in enumerate(all_values[1:], start=2):
                 if row[0] == str(customer_id):
                     sheet.update_cell(i, headers.index('status') + 1, new_status)
-                    updated = True
                     break
-            
-            if updated:
-                # 캐시 무효화
-                st.cache_data.clear()
-                return True
-            else:
-                st.error(f"❌ ID {customer_id}를 찾을 수 없습니다.")
-                return False
-                
         except Exception as e:
             st.error(f"상태 업데이트 오류: {str(e)}")
-            return False
 
 # 헬퍼 함수들
 def get_store_name(store_code, sheets_manager):
