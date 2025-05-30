@@ -496,12 +496,26 @@ class SheetsManager:
             sheet = self.workbook.worksheet("customers")
             all_values = sheet.get_all_values()
             headers = all_values[0]
+            
+            # 상태 업데이트 성공 여부 확인
+            updated = False
             for i, row in enumerate(all_values[1:], start=2):
                 if row[0] == str(customer_id):
                     sheet.update_cell(i, headers.index('status') + 1, new_status)
+                    updated = True
                     break
+            
+            if updated:
+                # 캐시 무효화
+                st.cache_data.clear()
+                return True
+            else:
+                st.error(f"❌ ID {customer_id}를 찾을 수 없습니다.")
+                return False
+                
         except Exception as e:
             st.error(f"상태 업데이트 오류: {str(e)}")
+            return False
 
 # 헬퍼 함수들
 def get_store_name(store_code, sheets_manager):
