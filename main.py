@@ -262,6 +262,30 @@ import time
 import io
 from Home import init_google_sheets, SheetsManager, get_store_name, mask_phone
 
+# API 호출 최적화를 위한 에러 핸들링
+def safe_api_call(func, *args, **kwargs):
+    """API 호출 시 429 에러 처리"""
+    max_retries = 3
+    retry_delay = 2  # 초
+    
+    for attempt in range(max_retries):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            if "429" in str(e) or "Quota exceeded" in str(e):
+                if attempt < max_retries - 1:
+                    st.warning(f"⏳ API 한도 초과. {retry_delay}초 후 재시도... ({attempt + 1}/{max_retries})")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # 지수적 백오프
+                    continue
+                else:
+                    st.error("❌ API 호출 한도 초과. 잠시 후 다시 시도해주세요.")
+                    return None
+            else:
+                st.error(f"❌ 오류 발생: {str(e)}")
+                return None
+    return None
+
 # 권한 확인 함수
 def check_admin_permission():
     """관리자 권한 확인"""
@@ -447,8 +471,11 @@ def show_customer_login(sheets_manager):
     st.info("💡 고객 등록 화면만 이용 가능합니다")
     
     try:
-        # 팀 목록 가져오기
-        teams = sheets_manager.get_teams()
+        # 팀 목록 가져오기 (안전한 API 호출)
+        teams = safe_api_call(sheets_manager.get_teams)
+        
+        if teams is None:  # API 오류 발생
+            return
         
         if not teams:
             st.error("❌ 등록된 팀이 없습니다.")
@@ -460,8 +487,11 @@ def show_customer_login(sheets_manager):
         if selected_team == "팀을 선택하세요...":
             return
             
-        # 선택된 팀의 매장들 가져오기
-        team_stores = sheets_manager.get_stores_by_team(selected_team)
+        # 선택된 팀의 매장들 가져오기 (안전한 API 호출)
+        team_stores = safe_api_call(sheets_manager.get_stores_by_team, selected_team)
+        
+        if team_stores is None:  # API 오류 발생
+            return
         
         if not team_stores:
             st.warning(f"❗ {selected_team}에 등록된 매장이 없습니다.")
