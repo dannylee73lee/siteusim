@@ -467,6 +467,26 @@ class SheetsManager:
                 return True
         return False
 
+    def set_store_customer_account_by_name(self, store_name, user_id, user_pw):
+        """매장명으로 고객 계정 정보 설정"""
+        sheet = self.workbook.worksheet("stores")
+        all_values = sheet.get_all_values()
+        headers = all_values[0]
+        
+        try:
+            store_name_idx = headers.index("store_name")
+            user_id_idx = headers.index("user_id")
+            user_pw_idx = headers.index("user_pw")
+        except ValueError:
+            return False
+            
+        for i, row in enumerate(all_values[1:], start=2):
+            if row[store_name_idx] == store_name:
+                sheet.update_cell(i, user_id_idx + 1, user_id)
+                sheet.update_cell(i, user_pw_idx + 1, user_pw)
+                return True
+        return False
+
     def update_customer_status(self, customer_id, new_status):
         """고객 상태 업데이트"""
         try:
