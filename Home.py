@@ -731,7 +731,7 @@ def show_customer_input_form(store_name, store_code, sheets_manager):
             • 전화번호는 숫자만 입력하세요<br>
             • 대기번호 발급 후 호출시까지 대기해주세요<br>
             • 예상시간은 실시간으로 변동될 수 있습니다<br>
-            • 개인정보는 업무 목적으로만 사용되며 안전하게 관리됩니다.
+            • 고객님의 개인정보는 필요한 목적에만 사용되며, 알아볼 수 없도록 처리한 뒤 안전하게 보관·삭제됩니다.
         </div>
     </div>
     """, unsafe_allow_html=True)
