@@ -1,4 +1,29 @@
 import streamlit as st
+
+# 검색엔진에서 온 방문자 차단
+st.markdown("""
+<script>
+// 검색엔진에서 온 경우 차단
+if (document.referrer.includes('google.com') || 
+    document.referrer.includes('bing.com') || 
+    document.referrer.includes('search.yahoo.com') ||
+    document.referrer.includes('duckduckgo.com')) {
+    
+    document.body.style.display = 'none';
+    document.head.innerHTML = '<title>404 - Page Not Found</title>';
+    document.body.innerHTML = `
+        <div style="text-align: center; margin-top: 100px; font-family: Arial;">
+            <h1>404</h1>
+            <h2>Page Not Found</h2>
+            <p>The requested page could not be found.</p>
+        </div>
+    `;
+    throw new Error('Access blocked from search engine');
+}
+</script>
+""", unsafe_allow_html=True)
+
+
 st.set_page_config(
     page_title="유심 교체 대기 등록",
     page_icon="📱",
