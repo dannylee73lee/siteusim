@@ -303,11 +303,6 @@ def show_admin_view(sheets_manager, store_code=None):
     
     # 자동 새로고침 및 다크모드 최적화
     st.markdown("""
-        <script>
-        setTimeout(function() {
-            window.location.reload();
-        }, 30000);
-        </script>
         <style>
         /* 다크모드에서 고객 카드 색상 최적화 */
         @media (prefers-color-scheme: dark) {
@@ -334,16 +329,46 @@ def show_admin_view(sheets_manager, store_code=None):
         st.warning("❗ 먼저 '로그인' 탭에서 매장을 선택해주세요.")
         return
 
-    # 전체 고객 데이터 가져오기 (모든 상태 포함)
-    all_customers = [c for c in sheets_manager.get_customers() if c.get('store_code') == store_code]
+    # 디버깅 정보 표시
+    st.info(f"🔍 현재 매장 코드: {store_code}")
+    
+    # 전체 고객 데이터 가져오기 (안전한 API 호출)
+    all_customers_raw = safe_api_call(sheets_manager.get_customers)
+    
+    if all_customers_raw is None:
+        st.error("❌ 고객 데이터를 불러올 수 없습니다.")
+        return
+    
+    # 현재 매장의 고객만 필터링
+    all_customers = [c for c in all_customers_raw if c.get('store_code') == store_code]
+    
+    # 디버깅: 전체 데이터 확인
+    st.expander("🔍 디버깅 정보", expanded=False).write({
+        "전체 고객 수": len(all_customers_raw),
+        "현재 매장 고객 수": len(all_customers),
+        "매장 코드": store_code,
+        "샘플 데이터": all_customers_raw[:3] if all_customers_raw else "없음"
+    })
     
     # 화면 표시용 (대기, 처리중만)
     filtered_for_display = [c for c in all_customers if c['status'] in ['대기', '처리중']]
 
     if st.button("🔄 새로고침"):
+        # 캐시 클리어
+        st.cache_data.clear()
         st.rerun()
 
     st.markdown("---")
+    
+    # 고객이 없는 경우 안내
+    if not all_customers:
+        st.info("📝 아직 등록된 고객이 없습니다.")
+        st.markdown("### 💡 확인사항")
+        st.markdown("1. 고객 등록이 정상적으로 완료되었는지 확인")
+        st.markdown("2. 매장 코드가 올바른지 확인")
+        st.markdown("3. Google Sheets 연결 상태 확인")
+        return
+    
     st.caption("테이블에서 직접 상태를 변경하세요:")
 
     # 엑셀 다운로드 버튼 - 전체 데이터로 변경
@@ -367,8 +392,14 @@ def show_admin_view(sheets_manager, store_code=None):
             file_name=f"전체_고객_목록_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-    else:
-        st.info("다운로드할 데이터가 없습니다.")
+    
+    # 대기/처리중 고객이 없는 경우
+    if not filtered_for_display:
+        st.warning("⏳ 현재 대기중이거나 처리중인 고객이 없습니다.")
+        if all_customers:
+            completed_count = len([c for c in all_customers if c['status'] == '완료'])
+            st.info(f"✅ 완료된 고객: {completed_count}명")
+        return
 
     # 화면에는 대기, 처리중인 고객만 표시 (다크모드 최적화)
     for customer in filtered_for_display:
@@ -399,14 +430,18 @@ def show_admin_view(sheets_manager, store_code=None):
 
             if customer['status'] == '대기':
                 if st.button(f"▶ 처리 시작 ({customer['id']})", key=f"start_{customer['id']}"):
-                    sheets_manager.update_customer_status(customer['id'], '처리중')
-                    st.success(f"ID {customer['id']} → 처리중")
-                    st.rerun()
+                    success = safe_api_call(sheets_manager.update_customer_status, customer['id'], '처리중')
+                    if success is not None:
+                        st.success(f"ID {customer['id']} → 처리중")
+                        st.cache_data.clear()  # 캐시 클리어
+                        st.rerun()
             elif customer['status'] == '처리중':
                 if st.button(f"✅ 완료 처리 ({customer['id']})", key=f"done_{customer['id']}"):
-                    sheets_manager.update_customer_status(customer['id'], '완료')
-                    st.success(f"ID {customer['id']} → 완료")
-                    st.rerun()
+                    success = safe_api_call(sheets_manager.update_customer_status, customer['id'], '완료')
+                    if success is not None:
+                        st.success(f"ID {customer['id']} → 완료")
+                        st.cache_data.clear()  # 캐시 클리어
+                        st.rerun()
 
             st.markdown("""</div></div>""", unsafe_allow_html=True)
 
