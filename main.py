@@ -1,11 +1,50 @@
 import streamlit as st
 
-# robots.txt 처리 - 더 안전한 방법
+# robots.txt 처리 - 더 강화된 방법
 try:
     if st.query_params.get('robots') == 'txt':
         st.text("""User-agent: *
+Disallow: /
+Crawl-delay: 86400
+
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: Slurp
+Disallow: /
+
+User-agent: DuckDuckBot
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: YandexBot
+Disallow: /
+
+User-agent: facebookexternalhit
+Disallow: /
+
+User-agent: Twitterbot
 Disallow: /""")
         st.stop()
+except:
+    pass
+
+# URL 패턴 기반 차단
+try:
+    # 검색엔진 크롤러가 자주 사용하는 파라미터들 차단
+    blocked_params = ['utm_source', 'gclid', 'fbclid', '_ga', 'ref']
+    for param in blocked_params:
+        if st.query_params.get(param):
+            st.error("403 Forbidden")
+            st.stop()
+            
+    # 의심스러운 User-Agent나 referrer 체크 (서버사이드)
+    # 실제 배포 시에는 이 부분을 서버 설정에서 처리하는 것이 더 효과적
 except:
     pass
 
@@ -16,73 +55,158 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 강화된 검색엔진 차단 메타 태그 및 referrer 차단
+# 매우 강화된 검색엔진 차단 및 보안 메타 태그
 st.markdown("""
-    <!-- 강화된 검색엔진 차단 메타 태그 -->
-    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, noydir">
-    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet">
-    <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet">
-    <meta name="slurp" content="noindex, nofollow, noarchive, nosnippet">
-    <meta name="duckduckbot" content="noindex, nofollow, noarchive, nosnippet">
-    <meta name="baiduspider" content="noindex, nofollow, noarchive, nosnippet">
-    <meta name="yandexbot" content="noindex, nofollow, noarchive, nosnippet">
+    <!-- 최대한 강화된 검색엔진 차단 메타 태그 -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, noydir, nostore, nocache">
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache">
+    <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache">
+    <meta name="slurp" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache">
+    <meta name="duckduckbot" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache">
+    <meta name="baiduspider" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache">
+    <meta name="yandexbot" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache">
+    <meta name="facebookexternalhit" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="twitterbot" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="linkedinbot" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="whatsapp" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="telegrambot" content="noindex, nofollow, noarchive, nosnippet">
     
-    <!-- 추가 차단 헤더 -->
-    <meta http-equiv="X-Robots-Tag" content="noindex, nofollow, noarchive, nosnippet">
-    
-    <!-- 캐시 방지 -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <!-- 추가 보안 헤더 -->
+    <meta http-equiv="X-Robots-Tag" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Expires" content="-1">
+    
+    <!-- 검색엔진 sitemap 차단 -->
+    <meta name="googlebot" content="unavailable_after: 01-Jan-2020 00:00:00 GMT">
+    
+    <!-- 페이지 설명을 봇이 이해하기 어렵게 -->
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <meta name="author" content="">
+    
+    <!-- Open Graph 태그 차단 -->
+    <meta property="og:title" content="">
+    <meta property="og:description" content="">
+    <meta property="og:image" content="">
+    <meta property="og:url" content="">
+    <meta property="og:type" content="">
+    
+    <!-- Twitter Card 차단 -->
+    <meta name="twitter:card" content="">
+    <meta name="twitter:title" content="">
+    <meta name="twitter:description" content="">
+    <meta name="twitter:image" content="">
     
     <script>
-    // 강화된 검색엔진 및 봇 차단
+    // 매우 강화된 검색엔진 및 봇 차단 시스템
     (function() {
+        'use strict';
+        
         var userAgent = navigator.userAgent.toLowerCase();
         var referrer = document.referrer.toLowerCase();
+        var currentUrl = window.location.href.toLowerCase();
         
-        // 검색엔진 봇 차단 (User-Agent 기반)
+        // 더 광범위한 검색엔진 봇 목록
         var searchBots = [
-            'googlebot', 'bingbot', 'slurp', 'duckduckbot', 
-            'baiduspider', 'yandexbot', 'facebookexternalhit',
-            'twitterbot', 'linkedinbot', 'whatsapp', 'telegrambot',
-            'crawler', 'spider', 'bot', 'scraper'
+            'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandexbot',
+            'facebookexternalhit', 'twitterbot', 'linkedinbot', 'whatsapp', 'telegrambot',
+            'crawler', 'spider', 'bot', 'scraper', 'crawl', 'search', 'index',
+            'msnbot', 'ia_archiver', 'lycos', 'jeeves', 'scooter', 'fast-webcrawler',
+            'slurp@inktomi', 'turnitinbot', 'technorati', 'yahoo', 'findexa', 'findlinks',
+            'gaisbot', 'zyborg', 'surveybot', 'bloglines', 'blogsearch', 'pubsub',
+            'syndic8', 'digg', 'digger', 'silk', 'snappy', 'python', 'curl', 'wget',
+            'libwww', 'lwp', 'mechanize', 'scrapy', 'selenium', 'phantom', 'headless'
         ];
         
-        // 검색엔진 referrer 차단
+        // 확장된 검색엔진 referrer 목록
         var searchEngines = [
-            'google.', 'bing.', 'yahoo.', 'duckduckgo.', 
-            'search.', 'baidu.', 'yandex.', 'naver.', 'daum.',
-            'ecosia.', 'startpage.', 'searx.'
+            'google.', 'bing.', 'yahoo.', 'duckduckgo.', 'search.', 'baidu.', 'yandex.',
+            'naver.', 'daum.', 'ecosia.', 'startpage.', 'searx.', 'ask.', 'aol.',
+            'lycos.', 'dogpile.', 'metacrawler.', 'excite.', 'altavista.', 'hotbot.',
+            'webcrawler.', 'infoseek.', 'go.com', 'search.com', 'searchengine.'
         ];
         
-        // 봇 감지시 차단
+        // 의심스러운 URL 패턴
+        var suspiciousPatterns = [
+            'utm_source', 'gclid', 'fbclid', '_ga', 'ref=', 'source=',
+            'campaign=', 'medium=', 'term=', 'content=', 'gclsrc'
+        ];
+        
+        // URL에 의심스러운 패턴이 있는지 확인
+        for (var i = 0; i < suspiciousPatterns.length; i++) {
+            if (currentUrl.includes(suspiciousPatterns[i])) {
+                redirectToError('404');
+                return false;
+            }
+        }
+        
+        // 봇 User-Agent 감지
         for (var i = 0; i < searchBots.length; i++) {
             if (userAgent.includes(searchBots[i])) {
-                document.head.innerHTML = '<title>403 Forbidden</title>';
-                document.body.innerHTML = '<div style="text-align:center;margin-top:100px;font-family:Arial;"><h1>403</h1><h2>Forbidden</h2><p>Access Denied</p></div>';
-                
-                // 히스토리 조작으로 뒤로가기 방지
-                history.replaceState(null, '', '/403');
-                
+                redirectToError('403');
                 return false;
             }
         }
         
-        // 검색엔진에서 온 경우 차단
+        // 검색엔진 referrer 감지
         for (var i = 0; i < searchEngines.length; i++) {
             if (referrer.includes(searchEngines[i])) {
-                document.head.innerHTML = '<title>404 Not Found</title>';
-                document.body.innerHTML = '<div style="text-align:center;margin-top:100px;font-family:Arial;"><h1>404</h1><h2>Page Not Found</h2><p>The requested page could not be found.</p></div>';
-                
-                // 히스토리 조작으로 뒤로가기 방지
-                history.replaceState(null, '', '/404');
-                
+                redirectToError('404');
                 return false;
             }
         }
         
-        // 추가 보안: 개발자 도구 감지 및 차단 시도
+        // 헤드리스 브라우저나 자동화 도구 감지
+        if (navigator.webdriver || 
+            window.navigator.webdriver || 
+            window.callPhantom || 
+            window._phantom || 
+            window.phantom ||
+            !navigator.languages ||
+            navigator.languages.length === 0 ||
+            !window.chrome ||
+            typeof window.chrome.runtime === 'undefined') {
+            
+            // 의심스러운 환경에서는 경고만 표시 (일반 사용자 차단 방지)
+            console.warn('Automated environment detected');
+        }
+        
+        // 에러 페이지로 리다이렉트 함수
+        function redirectToError(errorType) {
+            document.head.innerHTML = '<title>' + errorType + ' Error</title>';
+            
+            if (errorType === '403') {
+                document.body.innerHTML = `
+                    <div style="text-align:center;margin-top:100px;font-family:Arial,sans-serif;color:#333;">
+                        <h1 style="font-size:72px;margin:0;color:#dc3545;">403</h1>
+                        <h2 style="font-size:24px;margin:10px 0;color:#666;">Forbidden</h2>
+                        <p style="font-size:16px;color:#888;">Access to this resource is denied.</p>
+                    </div>`;
+            } else {
+                document.body.innerHTML = `
+                    <div style="text-align:center;margin-top:100px;font-family:Arial,sans-serif;color:#333;">
+                        <h1 style="font-size:72px;margin:0;color:#dc3545;">404</h1>
+                        <h2 style="font-size:24px;margin:10px 0;color:#666;">Page Not Found</h2>
+                        <p style="font-size:16px;color:#888;">The requested page could not be found.</p>
+                    </div>`;
+            }
+            
+            // 히스토리 조작으로 뒤로가기 방지
+            history.replaceState(null, '', '/' + errorType);
+            
+            // 페이지 이동 차단
+            window.onbeforeunload = function() {
+                return false;
+            };
+            
+            // 추가 스크립트 실행 방지
+            setTimeout(function() {
+                throw new Error('Access denied');
+            }, 100);
+        }
+        
+        // 개발자 도구 감지 및 경고
         var devtools = {
             open: false,
             orientation: null
@@ -95,13 +219,55 @@ st.markdown("""
                     devtools.open = true;
                     console.clear();
                     console.log('%c⚠️ 개발자 도구 사용이 감지되었습니다.', 'color: red; font-size: 20px; font-weight: bold;');
+                    console.log('%c이 사이트는 내부 사용 전용입니다.', 'color: red; font-size: 16px;');
                 }
             } else {
                 devtools.open = false;
             }
         }, 500);
         
+        // 우클릭 방지
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // 특정 키 조합 방지 (F12, Ctrl+Shift+I 등)
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+                (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 텍스트 선택 방지
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
     })();
+    
+    // 페이지 제목을 주기적으로 변경하여 크롤링 방해
+    setInterval(function() {
+        if (document.title !== '유심 교체 대기 등록') {
+            document.title = '유심 교체 대기 등록';
+        }
+    }, 1000);
+    
+    // 추가 보안: 페이지 소스 보기 방지
+    document.addEventListener('DOMContentLoaded', function() {
+        // 페이지 내용을 동적으로 생성하여 정적 크롤링 방해
+        setTimeout(function() {
+            var metaElements = document.querySelectorAll('meta[name="robots"], meta[name="googlebot"]');
+            metaElements.forEach(function(el) {
+                el.setAttribute('content', 'noindex, nofollow, noarchive, nosnippet');
+            });
+        }, 100);
+    });
     </script>
     
     <style>
@@ -136,6 +302,22 @@ st.markdown("""
         width: 0 !important;
         position: absolute !important;
         left: -9999px !important;
+    }
+    
+    /* 텍스트 선택 방지 */
+    * {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+    
+    /* 입력 필드는 선택 가능하도록 */
+    input, textarea {
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+        user-select: text !important;
     }
     
     /* 다크모드 최적화 */
@@ -251,8 +433,9 @@ st.markdown("""
         display: none !important;
     }
     </style>
+    
     <script>
-    // JavaScript로 동적으로 Streamlit 브랜딩 요소 제거
+    // JavaScript로 동적으로 Streamlit 브랜딩 요소 제거 - 강화 버전
     function hideStreamlitElements() {
         // 일반적인 Streamlit 브랜딩 요소들
         const selectors = [
