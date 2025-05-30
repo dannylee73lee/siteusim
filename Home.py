@@ -196,10 +196,11 @@ class SheetsManager:
     def __init__(self, workbook):
         self.workbook = workbook
         
-    def get_all_stores(self):
-        """모든 매장 정보 조회"""
+    @st.cache_data(ttl=300)  # 5분간 캐시
+    def get_all_stores(_self):
+        """모든 매장 정보 조회 (캐시 적용)"""
         try:
-            sheet = self.workbook.worksheet("stores")
+            sheet = _self.workbook.worksheet("stores")
             all_values = sheet.get_all_values()
             
             if not all_values or len(all_values) < 2:
@@ -241,8 +242,9 @@ class SheetsManager:
                 return store
         return None
     
-    def get_customers(self, store_code=None):
-        """고객 목록 조회"""
+    @st.cache_data(ttl=60)  # 1분간 캐시
+    def get_customers(_self, store_code=None):
+        """고객 목록 조회 (캐시 적용)"""
         try:
             sheet = self.workbook.worksheet("customers")
             all_values = sheet.get_all_values()
@@ -427,9 +429,10 @@ class SheetsManager:
                 'other_service_time': 10
             }
 
-    def get_teams(self):
-        """모든 팀 목록 가져오기"""
-        stores = self.get_all_stores()
+    @st.cache_data(ttl=300)  # 5분간 캐시
+    def get_teams(_self):
+        """모든 팀 목록 가져오기 (캐시 적용)"""
+        stores = _self.get_all_stores()
         teams = list(set([store['team'] for store in stores if store.get('team')]))
         return sorted(teams)
     
