@@ -1,28 +1,29 @@
 import streamlit as st
 
-# 검색엔진에서 온 방문자 차단
+# 페이지 상단에 바로 삽입
 st.markdown("""
 <script>
-// 검색엔진에서 온 경우 차단
-if (document.referrer.includes('google.com') || 
-    document.referrer.includes('bing.com') || 
-    document.referrer.includes('search.yahoo.com') ||
-    document.referrer.includes('duckduckgo.com')) {
+(function() {
+    var referrer = document.referrer.toLowerCase();
+    var searchEngines = ['google.', 'bing.', 'yahoo.', 'duckduckgo.', 'search.'];
     
-    document.body.style.display = 'none';
-    document.head.innerHTML = '<title>404 - Page Not Found</title>';
-    document.body.innerHTML = `
-        <div style="text-align: center; margin-top: 100px; font-family: Arial;">
-            <h1>404</h1>
-            <h2>Page Not Found</h2>
-            <p>The requested page could not be found.</p>
-        </div>
-    `;
-    throw new Error('Access blocked from search engine');
-}
+    for (var i = 0; i < searchEngines.length; i++) {
+        if (referrer.includes(searchEngines[i])) {
+            // 즉시 페이지 숨기기
+            document.documentElement.style.display = 'none';
+            
+            // 404 페이지로 교체
+            setTimeout(function() {
+                document.head.innerHTML = '<title>404 Not Found</title>';
+                document.body.innerHTML = '<h1 style="text-align:center;margin-top:50px;">404 - Page Not Found</h1>';
+            }, 100);
+            
+            return false;
+        }
+    }
+})();
 </script>
 """, unsafe_allow_html=True)
-
 
 st.set_page_config(
     page_title="유심 교체 대기 등록",
