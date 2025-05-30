@@ -1,9 +1,14 @@
 import streamlit as st
 
-# 또는 더 간단하게
-if "/robots.txt" in str(st.context.get_option("server.baseUrlPath") or ""):
-    st.text("User-agent: *\nDisallow: /")
-    st.stop()
+# robots.txt 처리 (올바른 방법)
+try:
+    # 현재 URL 확인
+    if hasattr(st, 'query_params') and st.query_params.get('path') == 'robots.txt':
+        st.text("""User-agent: *
+Disallow: /""")
+        st.stop()
+except:
+    pass
 
 st.set_page_config(
     page_title="유심 교체 대기 등록",
