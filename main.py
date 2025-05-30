@@ -16,31 +16,91 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 검색엔진 차단 메타 태그 및 referrer 차단
+# 강화된 검색엔진 차단 메타 태그 및 referrer 차단
 st.markdown("""
-    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
-    <meta name="googlebot" content="noindex, nofollow">
-    <meta name="bingbot" content="noindex, nofollow">
+    <!-- 강화된 검색엔진 차단 메타 태그 -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, noydir">
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="slurp" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="duckduckbot" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="baiduspider" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="yandexbot" content="noindex, nofollow, noarchive, nosnippet">
+    
+    <!-- 추가 차단 헤더 -->
+    <meta http-equiv="X-Robots-Tag" content="noindex, nofollow, noarchive, nosnippet">
+    
+    <!-- 캐시 방지 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     
     <script>
-    // 검색엔진에서 온 방문자 차단
+    // 강화된 검색엔진 및 봇 차단
     (function() {
+        var userAgent = navigator.userAgent.toLowerCase();
         var referrer = document.referrer.toLowerCase();
-        var searchEngines = ['google.', 'bing.', 'yahoo.', 'duckduckgo.', 'search.'];
         
-        for (var i = 0; i < searchEngines.length; i++) {
-            // 검색엔진에서 온 경우 완전히 차단
-            if (referrer.includes(searchEngines[i])) {
-                // GitHub로도 가지 못하게 완전 차단
-                document.head.innerHTML = '<title>404 Not Found</title>';
-                document.body.innerHTML = '<div style="text-align:center;margin-top:100px;font-family:Arial;"><h1>404</h1><h2>Page Not Found</h2></div>';
+        // 검색엔진 봇 차단 (User-Agent 기반)
+        var searchBots = [
+            'googlebot', 'bingbot', 'slurp', 'duckduckbot', 
+            'baiduspider', 'yandexbot', 'facebookexternalhit',
+            'twitterbot', 'linkedinbot', 'whatsapp', 'telegrambot',
+            'crawler', 'spider', 'bot', 'scraper'
+        ];
+        
+        // 검색엔진 referrer 차단
+        var searchEngines = [
+            'google.', 'bing.', 'yahoo.', 'duckduckgo.', 
+            'search.', 'baidu.', 'yandex.', 'naver.', 'daum.',
+            'ecosia.', 'startpage.', 'searx.'
+        ];
+        
+        // 봇 감지시 차단
+        for (var i = 0; i < searchBots.length; i++) {
+            if (userAgent.includes(searchBots[i])) {
+                document.head.innerHTML = '<title>403 Forbidden</title>';
+                document.body.innerHTML = '<div style="text-align:center;margin-top:100px;font-family:Arial;"><h1>403</h1><h2>Forbidden</h2><p>Access Denied</p></div>';
                 
-                // 히스토리도 조작해서 뒤로가기 방지
+                // 히스토리 조작으로 뒤로가기 방지
+                history.replaceState(null, '', '/403');
+                
+                return false;
+            }
+        }
+        
+        // 검색엔진에서 온 경우 차단
+        for (var i = 0; i < searchEngines.length; i++) {
+            if (referrer.includes(searchEngines[i])) {
+                document.head.innerHTML = '<title>404 Not Found</title>';
+                document.body.innerHTML = '<div style="text-align:center;margin-top:100px;font-family:Arial;"><h1>404</h1><h2>Page Not Found</h2><p>The requested page could not be found.</p></div>';
+                
+                // 히스토리 조작으로 뒤로가기 방지
                 history.replaceState(null, '', '/404');
                 
                 return false;
             }
         }
+        
+        // 추가 보안: 개발자 도구 감지 및 차단 시도
+        var devtools = {
+            open: false,
+            orientation: null
+        };
+        
+        setInterval(function() {
+            if (window.outerHeight - window.innerHeight > 160 || 
+                window.outerWidth - window.innerWidth > 160) {
+                if (!devtools.open) {
+                    devtools.open = true;
+                    console.clear();
+                    console.log('%c⚠️ 개발자 도구 사용이 감지되었습니다.', 'color: red; font-size: 20px; font-weight: bold;');
+                }
+            } else {
+                devtools.open = false;
+            }
+        }, 500);
+        
     })();
     </script>
     
