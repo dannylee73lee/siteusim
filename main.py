@@ -1,30 +1,5 @@
 import streamlit as st
 
-# 페이지 상단에 바로 삽입
-st.markdown("""
-<script>
-(function() {
-    var referrer = document.referrer.toLowerCase();
-    var searchEngines = ['google.', 'bing.', 'yahoo.', 'duckduckgo.', 'search.'];
-    
-    for (var i = 0; i < searchEngines.length; i++) {
-        if (referrer.includes(searchEngines[i])) {
-            // 즉시 페이지 숨기기
-            document.documentElement.style.display = 'none';
-            
-            // 404 페이지로 교체
-            setTimeout(function() {
-                document.head.innerHTML = '<title>404 Not Found</title>';
-                document.body.innerHTML = '<h1 style="text-align:center;margin-top:50px;">404 - Page Not Found</h1>';
-            }, 100);
-            
-            return false;
-        }
-    }
-})();
-</script>
-""", unsafe_allow_html=True)
-
 st.set_page_config(
     page_title="유심 교체 대기 등록",
     page_icon="📱",
