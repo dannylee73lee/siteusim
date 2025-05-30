@@ -10,14 +10,6 @@ import os
 from pathlib import Path
 import random
 
-# # 페이지 설정
-# st.set_page_config(
-#     page_title="유심 교체 대기 등록",
-#     page_icon="📱",
-#     layout="centered",
-#     initial_sidebar_state="collapsed"
-# )
-
 # Google Sheets 연결 설정
 @st.cache_resource
 def init_google_sheets():
@@ -144,13 +136,20 @@ def load_css():
     </style>
     """
 
-# 개인정보 마스킹 함수들
-def mask_phone(phone):
-    """전화번호 마스킹 제거 - 원본 그대로 반환"""
-    return phone
+# 개인정보 마스킹 함수들 (수정됨)
+def mask_phone(phone, is_admin_view=False):
+    """전화번호 마스킹 - 관리자 화면에서는 마스킹 없음"""
+    if is_admin_view:
+        return phone  # 전산 담당자는 전화번호 전체 표시
+    else:
+        # 고객용: 뒷 4자리만 표시
+        numbers = ''.join(filter(str.isdigit, phone))
+        if len(numbers) == 11:
+            return f"{numbers[:3]}-****-{numbers[7:]}"
+        return phone
 
 def mask_name(name):
-    """이름 가운데 마스킹"""
+    """이름 가운데 마스킹 (모든 사용자에게 동일 적용)"""
     if len(name) <= 1:
         return name
     elif len(name) == 2:
@@ -183,7 +182,7 @@ def format_phone_number(phone):
     return phone
 
 def is_phone_duplicate(stored_phone, input_phone):
-    """전화번호 중복 확인 (마스킹 제거로 인한 단순화)"""
+    """전화번호 중복 확인"""
     numbers_only = ''.join(filter(str.isdigit, input_phone))
     if len(numbers_only) == 11:
         formatted_input = f"{numbers_only[:3]}-{numbers_only[3:7]}-{numbers_only[7:]}"
@@ -428,6 +427,59 @@ class SheetsManager:
                 'other_service_time': 10
             }
 
+    def get_teams(self):
+        """모든 팀 목록 가져오기"""
+        stores = self.get_all_stores()
+        teams = list(set([store['team'] for store in stores if store.get('team')]))
+        return sorted(teams)
+    
+    def get_stores_by_team(self, team):
+        """특정 팀의 매장들 가져오기"""
+        stores = self.get_all_stores()
+        team_stores = [store for store in stores if store.get('team') == team]
+        return team_stores
+    
+    def get_store_by_name(self, store_name):
+        """매장명으로 매장 정보 찾기"""
+        stores = self.get_all_stores()
+        for store in stores:
+            if store.get('store_name') == store_name:
+                return store
+        return None
+    
+    def set_store_admin_by_name(self, store_name, admin_id, admin_pw):
+        """매장명으로 관리자 정보 설정"""
+        sheet = self.workbook.worksheet("stores")
+        all_values = sheet.get_all_values()
+        headers = all_values[0]
+        
+        try:
+            store_name_idx = headers.index("store_name")
+            admin_id_idx = headers.index("admin_id")
+            admin_pw_idx = headers.index("admin_pw")
+        except ValueError:
+            return False
+            
+        for i, row in enumerate(all_values[1:], start=2):
+            if row[store_name_idx] == store_name:
+                sheet.update_cell(i, admin_id_idx + 1, admin_id)
+                sheet.update_cell(i, admin_pw_idx + 1, admin_pw)
+                return True
+        return False
+
+    def update_customer_status(self, customer_id, new_status):
+        """고객 상태 업데이트"""
+        try:
+            sheet = self.workbook.worksheet("customers")
+            all_values = sheet.get_all_values()
+            headers = all_values[0]
+            for i, row in enumerate(all_values[1:], start=2):
+                if row[0] == str(customer_id):
+                    sheet.update_cell(i, headers.index('status') + 1, new_status)
+                    break
+        except Exception as e:
+            st.error(f"상태 업데이트 오류: {str(e)}")
+
 # 헬퍼 함수들
 def get_store_name(store_code, sheets_manager):
     """매장 코드로 매장명 가져오기"""
@@ -483,7 +535,8 @@ def register_customer(phone, name, store_code, service_type, sheets_manager):
     try:
         formatted_phone = format_phone_number(phone)
         masked_name = mask_name(name)
-        masked_phone = mask_phone(formatted_phone)  # 이제 마스킹 없이 원본 반환
+        # 실제 저장시에는 원본 전화번호 저장
+        stored_phone = formatted_phone
         
         # 중복 확인
         existing_customers = sheets_manager.get_customers(store_code)
@@ -493,7 +546,7 @@ def register_customer(phone, name, store_code, service_type, sheets_manager):
                 return None, "이미 등록된 전화번호입니다."
         
         # 고객 추가
-        ticket_number = sheets_manager.add_customer(masked_name, masked_phone, service_type, store_code)
+        ticket_number = sheets_manager.add_customer(masked_name, stored_phone, service_type, store_code)
         
         if ticket_number:
             return ticket_number, "등록 성공"
@@ -503,39 +556,10 @@ def register_customer(phone, name, store_code, service_type, sheets_manager):
     except Exception as e:
         return None, f"등록 중 오류가 발생했습니다: {str(e)}"
 
-# 초기화
-workbook, client = init_google_sheets()
-
-if workbook is None:
-    st.error("🔧 Google Sheets 설정이 필요합니다.")
-    st.markdown("""
-    ### 설정 방법:
-    1. Google Cloud Console에서 서비스 계정 생성
-    2. credentials.json 파일을 프로젝트 루트에 저장
-    3. Google Sheets에서 새 스프레드시트 생성
-    4. 서비스 계정 이메일에 편집 권한 부여
-    """)
+# 고객 입력 화면
+def show_input_screen(store_name, store_code):
+    """고객 입력 화면"""
     
-    # 디버깅 정보 추가
-    st.markdown("### 🔍 연결 상태 확인")
-    try:
-        if "google_sheets" in st.secrets:
-            st.success("✅ Streamlit Secrets 설정 확인됨")
-        else:
-            credentials_path = Path("credentials.json")
-            if credentials_path.exists():
-                st.success("✅ credentials.json 파일 존재")
-            else:
-                st.error("❌ credentials.json 파일이 없습니다")
-    except Exception as e:
-        st.error(f"설정 확인 중 오류: {str(e)}")
-    
-    st.stop()
-
-sheets_manager = SheetsManager(workbook)
-
-# 메인 함수
-def main():
     # CSS 로드
     st.markdown(load_css(), unsafe_allow_html=True)
     
@@ -547,22 +571,21 @@ def main():
     if 'ticket_time' not in st.session_state:
         st.session_state.ticket_time = None
     
-    # 쿼리 파라미터 확인
-    try:
-        store_code = st.query_params.get('store', 'STORE001')
-    except:
-        query_params = st.experimental_get_query_params()
-        store_code = query_params.get('store', ['STORE001'])[0]
+    # SheetsManager 인스턴스 가져오기 (main에서 전달받아야 함)
+    workbook, client = init_google_sheets()
+    if workbook is None:
+        st.error("🔧 Google Sheets 설정이 필요합니다.")
+        return
     
-    store_name = get_store_name(store_code, sheets_manager)
+    sheets_manager = SheetsManager(workbook)
     
     if st.session_state.show_ticket:
         show_ticket_screen()
     else:
-        show_input_screen(store_name, store_code)
+        show_customer_input_form(store_name, store_code, sheets_manager)
 
-def show_input_screen(store_name, store_code):
-    """고객 입력 화면"""
+def show_customer_input_form(store_name, store_code, sheets_manager):
+    """고객 정보 입력 폼"""
     
     # 현재 대기 현황
     waiting_count, estimated_time = get_current_status(store_code, sheets_manager)
@@ -656,9 +679,9 @@ def show_input_screen(store_name, store_code):
         with preview_container:
             if phone:
                 formatted_phone = format_phone_number(phone)
-                masked_phone = mask_phone(formatted_phone)
+                masked_phone = mask_phone(formatted_phone, is_admin_view=False)  # 고객 화면이므로 마스킹
                 st.caption(f"📱 형식: {formatted_phone}")
-                st.caption(f"🔒 저장: {masked_phone}")
+                st.caption(f"🔒 표시: {masked_phone}")
             
             if name:
                 masked_name = mask_name(name)
@@ -708,7 +731,7 @@ def show_input_screen(store_name, store_code):
             • 전화번호는 숫자만 입력하세요<br>
             • 대기번호 발급 후 호출시까지 대기해주세요<br>
             • 예상시간은 실시간으로 변동될 수 있습니다<br>
-            • 개인정보는 식별이 불가능하도록 처리되며 안전하게 파기됩니다.
+            • 개인정보는 업무 목적으로만 사용되며 안전하게 관리됩니다.
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -751,6 +774,3 @@ def show_ticket_screen():
             st.session_state.ticket_number = None
             st.session_state.ticket_time = None
             st.rerun()
-
-if __name__ == "__main__":
-    main()
