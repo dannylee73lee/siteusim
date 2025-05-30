@@ -1,9 +1,8 @@
 import streamlit as st
 
-# robots.txt 처리 (올바른 방법)
+# robots.txt 처리 - 더 안전한 방법
 try:
-    # 현재 URL 확인
-    if hasattr(st, 'query_params') and st.query_params.get('path') == 'robots.txt':
+    if st.query_params.get('robots') == 'txt':
         st.text("""User-agent: *
 Disallow: /""")
         st.stop()
@@ -17,8 +16,35 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Git/Streamlit 접근 차단 CSS 및 다크모드 최적화
+# 검색엔진 차단 메타 태그 및 referrer 차단
 st.markdown("""
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="googlebot" content="noindex, nofollow">
+    <meta name="bingbot" content="noindex, nofollow">
+    
+    <script>
+    // 검색엔진에서 온 방문자 차단
+    (function() {
+        var referrer = document.referrer.toLowerCase();
+        var searchEngines = ['google.', 'bing.', 'yahoo.', 'duckduckgo.', 'search.'];
+        
+        for (var i = 0; i < searchEngines.length; i++) {
+            if (referrer.includes(searchEngines[i])) {
+                // 즉시 페이지 숨기기
+                document.documentElement.style.display = 'none';
+                
+                // 404 페이지로 교체
+                setTimeout(function() {
+                    document.head.innerHTML = '<title>404 Not Found</title>';
+                    document.body.innerHTML = '<div style="text-align:center;margin-top:100px;font-family:Arial;"><h1>404</h1><h2>Page Not Found</h2><p>The requested page could not be found.</p></div>';
+                }, 100);
+                
+                return false;
+            }
+        }
+    })();
+    </script>
+    
     <style>
     /* Git/Streamlit 하단 링크 숨기기 - 강화된 버전 */
     .stAppDeployButton,
@@ -342,8 +368,6 @@ class SheetsManager:
         return False
 
 # 전산 담당자 화면
-
-# show_admin_view 함수 수정
 def show_admin_view(sheets_manager, store_code=None):
     import io
     from streamlit import download_button
