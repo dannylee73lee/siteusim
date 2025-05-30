@@ -29,15 +29,14 @@ st.markdown("""
         var searchEngines = ['google.', 'bing.', 'yahoo.', 'duckduckgo.', 'search.'];
         
         for (var i = 0; i < searchEngines.length; i++) {
+            // 검색엔진에서 온 경우 완전히 차단
             if (referrer.includes(searchEngines[i])) {
-                // 즉시 페이지 숨기기
-                document.documentElement.style.display = 'none';
+                // GitHub로도 가지 못하게 완전 차단
+                document.head.innerHTML = '<title>404 Not Found</title>';
+                document.body.innerHTML = '<div style="text-align:center;margin-top:100px;font-family:Arial;"><h1>404</h1><h2>Page Not Found</h2></div>';
                 
-                // 404 페이지로 교체
-                setTimeout(function() {
-                    document.head.innerHTML = '<title>404 Not Found</title>';
-                    document.body.innerHTML = '<div style="text-align:center;margin-top:100px;font-family:Arial;"><h1>404</h1><h2>Page Not Found</h2><p>The requested page could not be found.</p></div>';
-                }, 100);
+                // 히스토리도 조작해서 뒤로가기 방지
+                history.replaceState(null, '', '/404');
                 
                 return false;
             }
