@@ -617,12 +617,12 @@ def show_admin_view(sheets_manager, store_code=None):
                         <div style='flex:2;'>""", unsafe_allow_html=True)
 
             if customer['status'] == '대기':
-                if st.button(f"▶ 처리 시작 ({customer['id']})", key=f"start_{customer['id']}"):
+                if st.button(f"🟡 대기중 → 처리시작 ({customer['id']})", key=f"start_{customer['id']}"):
                     sheets_manager.update_customer_status(customer['id'], '처리중')
                     st.success(f"ID {customer['id']} → 처리중")
                     st.rerun()
             elif customer['status'] == '처리중':
-                if st.button(f"✅ 완료 처리 ({customer['id']})", key=f"done_{customer['id']}"):
+                if st.button(f"🔵 처리중 → 완료처리 ({customer['id']})", key=f"done_{customer['id']}"):
                     sheets_manager.update_customer_status(customer['id'], '완료')
                     st.success(f"ID {customer['id']} → 완료")
                     st.rerun()
