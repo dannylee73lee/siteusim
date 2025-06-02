@@ -406,7 +406,7 @@ def show_admin_view(sheets_manager, store_code=None):
     else:
         st.info("다운로드할 데이터가 없습니다.")
 
-    # 화면에는 대기, 처리중인 고객만 표시 (다크모드 최적화)
+    # 화면에는 대기, 처리중인 고객만 표시 (수정된 버튼 로직)
     for customer in filtered_for_display:
         with st.container():
             status = customer['status']
@@ -431,18 +431,44 @@ def show_admin_view(sheets_manager, store_code=None):
                         <div style='flex:2;'><strong>이름:</strong> {customer['name']}</div>
                         <div style='flex:2;'><strong>전화:</strong> {displayed_phone}</div>
                         <div style='flex:2;'><strong>상태:</strong> {customer['status']}</div>
-                        <div style='flex:2;'>""", unsafe_allow_html=True)
+                        <div style='flex:3;'>""", unsafe_allow_html=True)
 
-            if customer['status'] == '대기':
-                if st.button(f"▶ 처리 시작 ({customer['id']})", key=f"start_{customer['id']}"):
-                    sheets_manager.update_customer_status(customer['id'], '처리중')
-                    st.success(f"ID {customer['id']} → 처리중")
-                    st.rerun()
-            elif customer['status'] == '처리중':
-                if st.button(f"✅ 완료 처리 ({customer['id']})", key=f"done_{customer['id']}"):
-                    sheets_manager.update_customer_status(customer['id'], '완료')
-                    st.success(f"ID {customer['id']} → 완료")
-                    st.rerun()
+            # 버튼들을 가로로 배열
+            col1, col2, col3 = st.columns([1, 1, 1])
+            
+            with col1:
+                # 대기 버튼 - 현재 상태가 대기일 때 활성화
+                if customer['status'] == '대기':
+                    if st.button(f"🟡 대기", key=f"waiting_{customer['id']}", disabled=False):
+                        # 대기 상태에서는 처리중으로 변경
+                        sheets_manager.update_customer_status(customer['id'], '처리중')
+                        st.success(f"ID {customer['id']} → 처리중")
+                        st.rerun()
+                else:
+                    st.button(f"⚪ 대기", key=f"waiting_disabled_{customer['id']}", disabled=True)
+            
+            with col2:
+                # 처리중 버튼 - 현재 상태가 처리중일 때 활성화
+                if customer['status'] == '처리중':
+                    st.button(f"🔵 처리중", key=f"processing_{customer['id']}", disabled=True)
+                elif customer['status'] == '대기':
+                    if st.button(f"⚪ 처리중", key=f"processing_inactive_{customer['id']}", disabled=False):
+                        # 대기에서 바로 처리중으로 이동 가능
+                        sheets_manager.update_customer_status(customer['id'], '처리중')
+                        st.success(f"ID {customer['id']} → 처리중")
+                        st.rerun()
+                else:
+                    st.button(f"⚪ 처리중", key=f"processing_disabled_{customer['id']}", disabled=True)
+            
+            with col3:
+                # 완료 버튼 - 처리중일 때만 활성화
+                if customer['status'] == '처리중':
+                    if st.button(f"✅ 완료", key=f"complete_{customer['id']}", disabled=False):
+                        sheets_manager.update_customer_status(customer['id'], '완료')
+                        st.success(f"ID {customer['id']} → 완료")
+                        st.rerun()
+                else:
+                    st.button(f"⚪ 완료", key=f"complete_disabled_{customer['id']}", disabled=True)
 
             st.markdown("""</div></div>""", unsafe_allow_html=True)
 
