@@ -422,7 +422,8 @@ def show_admin_view(sheets_manager, store_code=None):
                 css_class = "customer-card-done"
             
             # 전산 담당자 화면에서는 전화번호 마스킹 없음
-            displayed_phone = mask_phone(customer['phone'], is_admin_view=True)
+            # 수정된 코드 - 하이픈 제거
+            displayed_phone = mask_phone(customer['phone'], is_admin_view=True).replace('-', '')
                 
             st.markdown(f"""
                 <div class="{css_class}" style='background-color:{bg_color}; padding:10px; border-radius:8px; margin-bottom:10px;'>
