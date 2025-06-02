@@ -2,7 +2,6 @@ import streamlit as st
 st.set_page_config(
     page_title="유심 교체 대기 등록",
     page_icon="📱",
-    layout="centered",
     initial_sidebar_state="collapsed"
 )
 
